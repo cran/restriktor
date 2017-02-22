@@ -1,0 +1,60 @@
+# only when we have src code
+# useDynLib("restriktor")
+
+importFrom("lavaan",
+           lavParseModelString,
+           lav_constraints_parse,
+           lav_func_jacobian_complex)
+
+importFrom("mvtnorm",
+           rmvnorm)
+
+importFrom("quadprog",
+           solve.QP)
+
+importFrom("boot",
+           boot,
+           boot.ci)
+
+importFrom("MASS",
+           psi.bisquare,
+           psi.huber)
+
+importFrom("ic.infer",
+           #nchoosek, NOT EXPORTED!
+           ic.weights)
+
+importFrom("utils", "packageDescription")
+
+importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
+           "formula", "frequency", "median", "model.matrix",
+           "naresid", "pchisq", "pf", "pnorm", "printCoefmat", "pt",
+           "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
+           "sd", "start", "terms", "update", "var", "vcov",
+           "weighted.residuals", "weights", "gaussian", "lm.fit",
+           "lm.wfit", "mad", "coefficients", "family", "logLik") 
+
+# export ordinary functions defined in this package
+export("restriktor", 
+       "conLM.lm", "conRLM.rlm", "conGLM.glm",
+       "conTest", "iht",
+       "conTestF.conLM", "conTestF.conRLM", "conTestF.conGLM", 
+       "conTestLRT.conLM", "conTestLRT.conGLM", 
+       "conTestScore.conLM", "conTestScore.conRLM", "conTestScore.conGLM", 
+       "conTestWald.conRLM", 
+       "conTestWald2.conRLM",
+       "conTestC.restriktor", 
+       "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
+       "goric", 
+       "print.restriktor", "print.summary.restriktor",
+       "summary.restriktor", "conTest_summary.restriktor",
+       "print.conTest", 
+       "coef.restriktor", "model.matrix.restriktor",
+       "con_weights_boot")
+
+S3method(coef, restriktor)
+S3method(model.matrix, restriktor)
+S3method(print, restriktor)
+S3method(print, conTest)
+S3method(print, summary.restriktor)
+S3method(summary, restriktor)
