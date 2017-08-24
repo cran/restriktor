@@ -49,7 +49,7 @@
 }
 \details{
   The function \code{print} returns the restricted coefficients.
-  The output from the \code{print.summary.restriktor} function provides 
+  The output from the \code{print.summary.conLM} function provides 
   information that is comparable with the output from 
   \code{print.summary.lm}. Additional information is provided 
   about the unrestricted and restricted R-square and by default 
@@ -67,15 +67,21 @@
   
   \item{se.type}{type of standard error computed, equal to input 
   \code{se} in the \code{restriktor} function.}
+  
   \item{residuals}{the weighted residuals.}
+  
   \item{coefficients}{a p x 4 matrix with columns for the 
   estimated coefficient, its standard error, t-statistic and 
   corresponding p-value. If \code{bootCIs = TRUE} and the 
   \code{bootout} object is available in the object, bootstrapped
   standard errors and confidence intervals are produced.}
+  
   \item{rdf}{residual degrees of freedom.}
+  
   \item{R2.org}{unrestricted R-squared.}
+  
   \item{R2.reduced}{restricted R-squared.}
+  
   \item{goric}{goric value and attributed its penalty term and
   log-likelihood.}
 }
@@ -93,8 +99,8 @@
   # restricted linear model with restrictions that the walking 
   # exercises would not have a negative effect of increasing the 
   # mean age at which a child starts to walk. 
-  fit.restr <- restriktor(fit.lm, constraints = ' GroupActive  < GroupPassive; 
-                                                  GroupPassive < GroupNo ')
+  fit.con <- restriktor(fit.lm, constraints = ' GroupActive  < GroupPassive; 
+                                                GroupPassive < GroupNo ')
   
-  summary(fit.restr)
+  summary(fit.con)
 }

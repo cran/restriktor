@@ -235,9 +235,9 @@ conTest(fit1.lm, myConstraints1)
 
 
 # another way is to first fit the restricted model
-fit1.restr <- restriktor(fit1.lm, constraints = myConstraints1)
+fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit1.restr)
+conTest(fit.restr1)
 
 \dontrun{ 
   # Or in matrix notation.
@@ -246,7 +246,7 @@ conTest(fit1.restr)
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  conTest(fit.lm, constraints = Amat1,
+  conTest(fit1.lm, constraints = Amat1,
           rhs = myRhs1, neq = myNeq1)
 }            
 
@@ -279,9 +279,9 @@ conTest(fit2.lm, constraints = myConstraints2, type = "A",
 
 
 # or fit restricted linear model
-fit2.restr <- restriktor(fit2.lm, constraints = myConstraints2)
+fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
-conTest(fit2.restr)
+conTest(fit2.con)
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -291,7 +291,7 @@ conTest(fit2.restr)
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2.restr, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+  conTest(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
           type = "A", boot = "parametric", R = 9)
 }            
 
@@ -303,8 +303,8 @@ myConstraints3 <- ' group1 == group2
 conTest(fit2.lm, constraints = myConstraints3)
 
 # or
-fit3.restr <- restriktor(fit2.lm, constraints = myConstraints3)
-conTest(fit3.restr)
+fit3.con <- restriktor(fit2.lm, constraints = myConstraints3)
+conTest(fit3.con)
 
 
 ## example 4:
@@ -319,10 +319,9 @@ conTest(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit4.restr <- restriktor(fit2.lm, constraints = myConstraints4, 
-                         se = "boot.model.based", B = 9)
-
-conTest(fit4.restr, type = "B", neq.alt = 1)
+fit4.con <- restriktor(fit2.lm, constraints = myConstraints4, 
+                       se = "boot.model.based", B = 9)
+conTest(fit4.con, type = "B", neq.alt = 1)
 
 
 ## example 5:
@@ -348,7 +347,7 @@ myConstraints5 <- ' AVE := X + 16.86137*X.Z;
 conTest(fit5.lm, constraints = myConstraints5)
 
 # or
-fit5.restr <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z; 
-                                                  AVE > 0 ')
-conTest(fit5.restr)
+fit5.con <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z; 
+                                                AVE > 0 ')
+conTest(fit5.con)
 }

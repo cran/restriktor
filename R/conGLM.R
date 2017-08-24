@@ -5,7 +5,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                        debug = FALSE, ...) {
     
   # check class
-  if (!(class(object)[1] %in% c("glm"))) {
+  if (!(class(object)[1] == "glm")) {
     stop("Restriktor ERROR: object must be of class glm.")
   }
   # standard error methods
@@ -51,6 +51,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object, "working")
   # unconstrained estimates
   b.unrestr <- coef(object)
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
+                                    sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
   # number of parameters
   p <- length(coef(object))
   # sample size
@@ -92,13 +95,18 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
+  if (length(Amat) == 0L) {
+    Amat <- rbind(rep(0L, p))
+    bvec <- rep(0L, nrow(Amat))
+    meq  <- 0L
+  }
   
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set mix.weights = \"boot\")"))
+                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
     }
   } else {
     if (rAmat$rank < nrow(Amat) && 
@@ -118,6 +126,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")
+  }
+  
+  if (!(nrow(Amat) == length(bvec))) {
+    stop("nrow(Amat) != length(bvec)")
   }
   
   is.augmented <- TRUE
@@ -151,7 +163,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   } else {
     wt.bar <- NA
   }
-  attr(wt.bar, "wt.bar.method") <- mix.weights
+  attr(wt.bar, "method") <- mix.weights
   
   if (debug) {
     print(list(mix.weigths = wt.bar))

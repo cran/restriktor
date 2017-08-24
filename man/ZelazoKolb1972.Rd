@@ -16,6 +16,10 @@ Passive-exercise, 8 week Control, No-exercise).
   \describe{
     \item{\code{Age}}{Age in months}
     \item{\code{Group}}{Active-exercise, Passive-exercise, 8-week Control group, No-exercise}
+    %\item{\code{Group 1: Active-exercise}}{Active}
+    %\item{\code{Group 2: Passive-exercise}}{Passive}
+    %\item{\code{Group 3: 8-week Control group}}{Control}
+    %\item{\code{Group 4: No-exercise}}{No}
   }
 }
 \references{Zelazo, P.R., Zelazo, N.A., and Kolb, S. (1972). "Walking in the 

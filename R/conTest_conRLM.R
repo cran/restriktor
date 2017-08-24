@@ -37,7 +37,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -53,9 +53,10 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -105,9 +106,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
@@ -123,9 +122,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
@@ -153,9 +150,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         Ts <- robustFm(x         = X, 
                        y         = y, 
@@ -170,9 +165,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     }
   } 
   
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -180,10 +175,10 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    wt.mix <- wt.bar
-    attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.mix
-    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "wt.bar.method")
+    #wt.mix <- wt.bar
+    #attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.bar
+    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -293,7 +288,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -309,9 +304,10 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -361,15 +357,14 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                       sqrt(.Machine$double.eps), 
-                                       control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x         = X, 
                              y         = y,  
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = AmatG,
                              scale     = scale, 
                              test      = "Wald", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -382,9 +377,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
@@ -392,10 +385,30 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = Amat,
                              scale     = scale, 
                              test      = "Wald", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
     Ts <- out1$Ts
+    
+    ## small sample corrections
+    #
+    #N <- dim(X)[1]
+    #n2 <- N - 1
+    # Ts <- Ts / (1 + N*Ts / n2^2)
+    
+    # Swain-corrected
+    # t <- p
+    # d <- p*(p+1)/2 - t
+    # q <- (sqrt(1 + 4*p*(p+1) - 8*d) -1) / 2
+    # N <- n
+    # n2 <- N - 1
+    # s <- 1 - ( p*(2*p^2 + 3*p -1) - q*(2*q^2 + 3*q -1)  ) / (12*d*n2)
+    # Ts <- s*Ts
+    
+    # Bartlett-corrected
+    #b <- 1 - (2*p + 5) / (6*n2)
+    #Ts <- b*Ts
     V <- out1$V
   }
   else if (type == "B") {
@@ -405,6 +418,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                b.eqrestr = b.restr, 
                                b.restr   = b.unrestr,
                                b.unrestr = b.unrestr,
+                               Amat      = Amat,
                                scale     = scale, 
                                test      = "Wald", 
                                cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -420,15 +434,14 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
                                  y         = y,
                                  b.eqrestr = b.restr, 
                                  b.restr   = b.restr.alt,
-                                 b.unrestr = b.unrestr,
+                                 b.unrestr = b.restr.alt,
+                                 Amat      = Amat,
                                  scale     = scale, 
                                  test      = "Wald", 
                                  cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -444,13 +457,13 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # We need to recalculate the weights based on V.hat = V instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
   ## compute mixing weights
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none")) {
+  if (!(attr(object$wt.bar, "method") == "none")) {
     if (nrow(Amat) == meq) {
     # equality constraints only
       wt.bar <- rep(0L, ncol(V) + 1)
       wt.bar.idx <- ncol(V) - meq + 1
       wt.bar[wt.bar.idx] <- 1
-    } else if (attr(object$wt.bar, "wt.bar.method") == "boot") { 
+    } else if (attr(object$wt.bar, "method") == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
       wt.bar <- con_weights_boot(VCOV     = V,
                                  Amat     = Amat, 
@@ -462,17 +475,19 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                  seed     = seed,
                                  verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap") 
-    } else if (attr(object$wt.bar, "wt.bar.method") == "pmvnorm" && (meq < nrow(Amat))) {
+    } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
-    }
-    attr(wt.bar, "wt.bar.method") <- attr(object$wt.bar, "wt.bar.method")
-  } 
+    } 
+  } else {
+    wt.bar <- as.numeric(NA)
+  }
+  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
   ##############################################################################
   
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -591,9 +606,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unrestrikted scale estimate for the standard deviation: 
-  tau <- sqrt(object$s2.unrestr)
+  stddev <- summary(model.org)$stddev
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -607,9 +622,10 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -659,15 +675,15 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustWaldXX(x         = X, 
                        b.eqrestr = b.eqrestr, 
                        b.restr   = b.restr, 
-                       b.unrestr = b.unrestr, 
-                       tau       = tau)$Ts
+                       b.unrestr = b.unrestr,
+                       Amat      = AmatG,
+                       tau       = stddev)$Ts
+    
   } else if (type == "A") {
     CALL <- c(call.org, list(x = X, y = y, weights = weights,
                              Amat = Amat, bvec = bvec, 
@@ -675,22 +691,22 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustWaldXX(x         = X,
                        b.eqrestr = b.eqrestr, 
                        b.restr   = b.restr, 
                        b.unrestr = b.unrestr, 
-                       tau       = tau)$Ts
+                       Amat      = Amat,
+                       tau       = stddev)$Ts
   } else if (type == "B") {
     if (meq.alt == 0L) {
       Ts <- robustWaldXX(x         = X, 
                          b.eqrestr = b.restr, 
                          b.restr   = b.unrestr, 
                          b.unrestr = b.unrestr, 
-                         tau       = tau)$Ts
+                         Amat      = Amat,
+                         tau       = stddev)$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
@@ -701,24 +717,23 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         Ts <- robustWaldXX(x         = X, 
                            b.eqrestr = b.restr, 
                            b.restr   = b.restr.alt, 
-                           b.unrestr = b.restr.alt, 
-                           tau       = tau)$Ts
+                           b.unrestr = b.restr.alt,
+                           Amat      = Amat,
+                           tau       = stddev)$Ts
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
   
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -835,7 +850,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -850,9 +865,10 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -902,15 +918,14 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x         = X, 
                              y         = y,  
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = AmatG,
                              scale     = scale, 
                              test      = "score", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -923,9 +938,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
@@ -933,10 +946,23 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = Amat,
                              scale     = scale, 
                              test      = "score", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
     Ts <- out1$Ts
+#    N <- dim(X)[1]
+#    n2 <- N - 1
+#    Ts <- Ts / (1 + N*Ts / n2^2)
+    
+    # t <- p
+    # d <- p*(p+1)/2 - t
+    # q <- (sqrt(1 + 4*p*(p+1) - 8*d) -1) / 2
+    # N <- n
+    # n2 <- N - 1
+    # s <- 1 - ( p*(2*p^2 + 3*p -1) - q*(2*q^2 + 3*q -1)  ) / (12*d*n2)
+    # Ts <- s*Ts
+    
     V <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
@@ -945,7 +971,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                b.eqrestr = b.restr, 
                                b.restr   = b.unrestr,
                                b.unrestr = b.unrestr,
-                               scale     = scale, 
+                               scale     = scale,
+                               Amat      = Amat,
                                test      = "score", 
                                cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
       Ts <- out2$Ts
@@ -960,16 +987,15 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
                                  y         = y,  
                                  b.eqrestr = b.restr, 
                                  b.restr   = b.restr.alt,
-                                 b.unrestr = b.unrestr,
+                                 b.unrestr = b.restr.alt,
                                  scale     = scale, 
+                                 Amat      = Amat,
                                  test      = "score", 
                                  cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
         Ts <- out3$Ts
@@ -983,35 +1009,36 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # We need to recalculate the weights based on V.hat = Sigam instead on solve(t(X)%*%X)
   # Do we have to? The differences are very small.
   ## compute mixing weights
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none")) {
+  if (!(attr(object$wt.bar, "method") == "none")) {
     if (nrow(Amat) == meq) {
       # equality constraints only
       wt.bar <- rep(0L, ncol(V) + 1)
       wt.bar.idx <- ncol(V) - meq + 1
       wt.bar[wt.bar.idx] <- 1
-    } else if (attr(object$wt.bar, "wt.bar.method") == "boot") { 
+    } else if (attr(object$wt.bar, "method") == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
       wt.bar <- con_weights_boot(VCOV     = V,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = attr(object$wt.bar, "mix.bootstrap"),
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
+                             Amat     = Amat, 
+                             meq      = meq, 
+                             R        = attr(object$wt.bar, "mix.bootstrap"),
+                             parallel = parallel,
+                             ncpus    = ncpus,
+                             cl       = cl,
+                             seed     = seed,
+                             verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap")
-    } else if (attr(object$wt.bar, "wt.bar.method") == "pmvnorm" && (meq < nrow(Amat))) {
+    } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
-    }
-    attr(wt.bar, "wt.bar.method") <- attr(object$wt.bar, "wt.bar.method")
+    } 
+  } else {
+    wt.bar <- as.numeric(NA)
   } 
+  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
   
-  
-  if (!attr(object$wt.bar, "wt.bar.method") == "none" && boot == "no") {
+  if (!attr(object$wt.bar, "method") == "none" && boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,

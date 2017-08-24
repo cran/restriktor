@@ -64,11 +64,15 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object)
   # unrestrikted coefficients
   b.unrestr <- coef(object)
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
+                                    sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
   # vcov
   Sigma <- vcov(object) 
-  # unrestrikted scale estimate for the standard deviation: 
-  # tau^2 * solve(t(X)%*%X) equals vcov(object)
-  tau <- so$stddev
+  # unrestrikted estimate of scale 
+  scale <- object$s
+  # a scale estimate used for the standard errors
+  stddev <- so$stddev
   # residuals
   residuals <- residuals(object) # NOT working residual
   # sample size
@@ -111,12 +115,18 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
+  if (length(Amat) == 0L) {
+    Amat <- rbind(rep(0L, p))
+    bvec <- rep(0L, nrow(Amat))
+    meq  <- 0L
+  }
+  
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set mix.weights = \"boot\")"))
+                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
     }
   } else {
     if (rAmat$rank < nrow(Amat) && 
@@ -133,6 +143,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
          "\n       match with the number of parameters.")
+  }
+  
+  if (!(nrow(Amat) == length(bvec))) {
+    stop("nrow(Amat) != length(bvec)")
   }
   
   timing$constraints <- (proc.time()[3] - start.time)
@@ -182,7 +196,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   } else {
     wt.bar <- NA
   }
-  attr(wt.bar, "wt.bar.method") <- mix.weights
+  attr(wt.bar, "method") <- mix.weights
   
   if (debug) {
     print(list(mix.weights = wt.bar))
@@ -194,7 +208,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  
     b.restr   <- b.unrestr
-    tau.restr <- tau
+    #scale.restr <- scale
     
     OUT <- list(CON         = CON,
                 call        = mc,
@@ -208,12 +222,11 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 weights     = weights,  # prior weights
                 w           = object$w, # weights used in the IWLS process
                 scale       = object$s, 
+                stddev      = stddev,
                 psi         = object$psi,
                 R2.org      = R2.org,
                 R2.reduced  = R2.org,
                 df.residual = so$df[2],
-                s2.unrestr  = tau^2, 
-                s2.restr    = tau^2, 
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma, # probably not so robust!
                 constraints = Amat, 
@@ -262,29 +275,28 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     # in case of equality constraints we need to correct the residual df 
     if (length(object$call[["wt.method"]]) && object$call[["wt.method"]] == "case") {
       rdf <- sum(weights) - p
-    #  w   <- rfit$psi(rfit$wresid/rfit$scale)
       S   <- sum(weights * (rfit$wresid * w)^2) / rdf
       std <- summary(rfit)$stddev / sqrt(S)
-      
+
       if (!is.null(Amat)) {
+        # df correction
         rdf <- sum(weights) - (p - qr(Amat[0:meq,])$rank)
         S.new <- sum(weights * (rfit$wresid * w)^2) / rdf
-        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+        stddev <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
-        tau.restr <- std * sqrt(S)
+        stddev <- std * sqrt(S)
       }
     } else {
       rdf <- n - p
-     # w   <- rfit$psi(rfit$wresid/rfit$scale)
       S   <- sum((rfit$wresid * w)^2) / rdf
       std <- summary(rfit)$stddev / sqrt(S)
-      
+
       if (!is.null(Amat)) {
         rdf <- n - (p - qr(Amat[0:meq,])$rank)
         S.new <- sum((rfit$wresid * w)^2) / rdf
-        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+        stddev <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
-        tau.restr <- std * sqrt(S)
+        stddev <- std * sqrt(S)
       }
     }
     
@@ -309,11 +321,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 weights     = weights,
                 w           = w, 
                 scale       = rfit$s,
+                stddev      = stddev,
                 R2.org      = R2.org,
                 R2.reduced  = R2.reduced,
                 df.residual = so$df[2], 
-                s2.unrestr  = tau^2, 
-                s2.restr    = tau.restr^2, 
                 loglik      = ll.restr, 
                 Sigma       = Sigma,                             #probably not so robust???
                 constraints = Amat, 
@@ -329,7 +340,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   OUT$model.org <- object
   OUT$se <- se 
-  OUT$information <- 1 / tau.restr^2 * crossprod(X)
+  OUT$information <- 1 / stddev^2 * crossprod(X)
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  

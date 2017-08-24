@@ -52,9 +52,10 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -99,7 +100,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     b.eqrestr <- coef(glm.fit)
     # compute global test statistic
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, rhs = bvec, 
                  neq = nrow(Amat), se = "none", mix.weights = "none")
@@ -107,12 +108,12 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     b.eqrestr <- coef(glm.fit)
     # compute test statistic for hypothesis test type A
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
+      Ts <- c( t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr) ) 
     } else {
       if (meq.alt > 0L && meq.alt <= meq) {
         # compute test statistic for hypothesis test type B when some equalities may 
@@ -124,7 +125,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         
         b.restr.alt <- coef(glm.fit)
         
-        Ts <- c(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
+        Ts <- c( t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt) ) 
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -137,9 +138,9 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # or via bootstrapping. The pvalue can also be computed directly via 
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -147,10 +148,10 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    wt.mix <- wt.bar
-    attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.mix
-    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "wt.bar.method")
+    #wt.mix <- wt.bar
+    #attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.bar
+    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -252,9 +253,9 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   # original model
   model.org <- object$model.org
   # model matrix
-  #X <- model.matrix(object)[,,drop=FALSE]
+  X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  #y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
   #w <- weights(model.org)
   # unconstrained df
@@ -274,9 +275,10 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -319,8 +321,6 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                  rhs = bvecG, neq = nrow(AmatG), se = "none", mix.weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
-    b.eqrestr <- coef(glm.fit)
-    
     ll0 <- glm.fit$loglik
     ll1 <- object$loglik
     
@@ -330,16 +330,13 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                  rhs = bvec, neq = nrow(Amat), se = "none", mix.weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
-    b.eqrestr <- coef(glm.fit)
-    
     ll0 <- glm.fit$loglik
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      
-      ll0 <- object$loglik
+      ll0 <- object$loglik 
       ll1 <- logLik(model.org)
       
       Ts <- -2*(ll0 - ll1)
@@ -350,8 +347,6 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop=FALSE], 
                      rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix.weights = "none")
         glm.fit <- do.call("restriktor", CALL)
-        
-        b.restr.alt <- coef(glm.fit)
         
         ll0 <- glm.fit$loglik
         ll1 <- object$loglik
@@ -364,9 +359,9 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
     }
   } 
   
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") { 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar          = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -509,9 +504,10 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -578,7 +574,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     I0 <- t(X) %*% W %*% X / dispersion0
     
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
     ###############################################
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
@@ -609,7 +605,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     I0 <- t(X) %*% W %*% X / dispersion0
     
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
     ###############################################
   } else if (type == "B") {
     if (meq.alt == 0L) {
@@ -635,7 +631,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       I0 <- t(X) %*% W %*% X / dispersion0
       
       # score test-statistic
-      Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+      Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
       ###############################################
     }
     else {
@@ -669,7 +665,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         I0 <- t(X) %*% W %*% X / dispersion0
         
         # score test-statistic
-        Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+        Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
       }
       else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
@@ -677,9 +673,9 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   }
 
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar          = rev(wt.bar),
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar,
                               Ts.org      = Ts,
                               df.residual = df.residual,
                               type        = type,

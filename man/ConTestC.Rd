@@ -109,9 +109,9 @@ conTest(fit.restr1, type = "C")
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  fit1.restr <- restriktor(fit1.lm, constraints = Amat1,
-                           rhs = myRhs1, neq = myNeq1)
-  conTest(fit1.restr, type = "C")
+  fit1.con <- restriktor(fit1.lm, constraints = Amat1,
+                         rhs = myRhs1, neq = myNeq1)
+  conTest(fit1.con, type = "C")
 }            
 
 }

@@ -1,23 +1,27 @@
-conLM.lm <- function(object, constraints = NULL, se = "standard", 
-                     B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-                     mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, cl = NULL, 
-                     seed = NULL, control = list(), verbose = FALSE, 
-                     debug = FALSE, ...) {
+conMLM.mlm <- function(object, constraints = NULL, se = "none", 
+                       B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
+                       mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, cl = NULL, 
+                       seed = NULL, control = list(), verbose = FALSE, 
+                       debug = FALSE, ...) {
   
   # check class
-  if (!(class(object)[1] == "lm")) {
-    stop("Restriktor ERROR: object must be of class lm.")
+  if (!(class(object)[1] == "mlm")) {
+    stop("Restriktor ERROR: object must be of class mlm.")
   }
+  
+  # not available yet.
+  se <- "none"
+  
   # standard error methods
-  if (se == "default") {
-    se <- "standard"
-  } else if (se == "boot.residual") {
-    se <- "boot.model.based"
-  }
-  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
-                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
-  }
+  # if (se == "default") {
+  #   se <- "standard"
+  # } else if (se == "boot.residual") {
+  #   se <- "boot.model.based"
+  # }
+  # if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
+  #                 "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+  #   stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+  # }
   # check method to compute chi-square-bar weights
   if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
     stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
@@ -36,28 +40,29 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   y <- as.matrix(object$model[, attr(object$terms, "response")])
   ## model matrix
   X <- model.matrix(object)[,,drop = FALSE]
-  # model summary
-  so <- summary(object)
-  # unconstrained residual variance (weighted)
-  s2 <- so$sigma^2
-  # weigths
-  weights <- weights(object)
+  # sample size
+  n <- dim(X)[1]
+  # number of parameters
+  p <- length(coef(object))
   # unconstrained estimates
   b.unrestr <- coef(object)
   b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
-                                sqrt(.Machine$double.eps), 
-                                control$tol)] <- 0L
-  # ML unconstrained MSE
-  Sigma <- vcov(object)
-  # number of parameters
-  p <- length(coef(object))
-  # sample size
-  n <- dim(X)[1]
-  # compute log-likelihood
+                                    sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
+  # unconstrained residual variance (weighted)
   residuals <- object$residuals
-  object.restr <- list(residuals = residuals, weights = weights)
+  # residual degree of freedom
+  df.residual <- object$df.residual
+  s2 <- (t(residuals) %*% residuals) / df.residual #sigma(object)
+  # vcov
+  Sigma <- vcov(object)
+  # model summary
+  so <- summary(object)
+  # original R2
+  R2.org <- unlist(lapply(so, function(x) x$r.squared))
+  # compute log-likelihood
+  object.restr <- list(residuals = residuals)
   ll.unrestr <- con_loglik_lm(object.restr)
-  
   
   if (debug) {
     print(list(loglik.unc = ll.unrestr))
@@ -109,13 +114,13 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     }
   } 
   else if (rAmat$rank < nrow(Amat) && 
-             !(se %in% c("none", "boot.model.based", "boot.standard")) && 
-             rAmat$rank != 0L) {
+           !(se %in% c("none", "boot.model.based", "boot.standard")) && 
+           rAmat$rank != 0L) {
     se <- "none"
     warning(paste("Restriktor Warning: No standard errors could be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  The constraint matrix must have full row-rank ( choose e.g. rows", 
                   paste(rAmat$pivot, collapse = " "), "), 
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))  
+                  Try se = \"boot.model.based\" or \"boot.standard\"."))  
   }
   
   timing$constraints <- (proc.time()[3] - start.time)
@@ -125,7 +130,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     stop("Restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")
   }
-
+  
   if (!(nrow(Amat) == length(bvec))) {
     stop("nrow(Amat) != length(bvec)")
   }
@@ -171,7 +176,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {
     b.restr  <- b.unrestr
     
     OUT <- list(CON         = CON,
@@ -180,12 +185,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
-                residuals   = residuals, # unweighted residuals
+                residuals   = residuals, 
                 fitted      = object$fitted,
-                weights     = weights,
-                df.residual = object$df.residual,
-                R2.org      = so$r.squared, 
-                R2.reduced  = so$r.squared,
+                df.residual = df.residual,
+                R2.org      = R2.org, 
+                R2.reduced  = R2.org,
                 s2          = s2, 
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma,
@@ -193,73 +197,57 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 rhs         = bvec, 
                 neq         = meq, 
                 wt.bar      = wt.bar,
-                iact        = 0L, 
+                iact        = 0L,
+                Niter       = 2L,
                 bootout     = NULL, 
                 control     = control)  
   } else {
     # compute constrained estimates using quadprog
     out.solver <- con_solver_lm(X         = X, 
                                 y         = y, 
-                                #b.unrestr = b.unrestr, 
-                                w         = weights, 
+                                w         = NULL, 
                                 Amat      = Amat,
                                 bvec      = bvec, 
                                 meq       = meq, 
                                 absval    = ifelse(is.null(control$absval), 
-                                                sqrt(.Machine$double.eps), 
-                                                control$absval),
+                                                   sqrt(.Machine$double.eps), 
+                                                   control$absval),
                                 maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                control$maxit))
+                                                   control$maxit))
     out.QP <- out.solver$qp
-    b.restr <- out.QP$solution
-      names(b.restr) <- names(b.unrestr)
+    b.restr <- matrix(out.QP$solution, ncol = ncol(y))
+      colnames(b.restr) <- colnames(b.unrestr)
+      rownames(b.restr) <- rownames(b.unrestr)
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
+    # number of iterations
+    Niter <- out.solver$Niter
     
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
+     
+    # compute log-likelihood
+    fitted <- X %*% b.restr
+    residuals <- y - fitted
+    s2 <- out.solver$s2
+    object.restr <- list(residuals = residuals)
+    ll.restr <- con_loglik_lm(object.restr)
     
-    # lm
-    if (ncol(y) == 1L) {
-      fitted <- X %*% b.restr
-      residuals <- y - fitted
-      
-      # compute log-likelihood
-      object.restr <- list(residuals = residuals, weights = weights)
-      ll.restr <- con_loglik_lm(object.restr)
-      
-      if (debug) {
-        print(list(loglik.restr = ll.restr))
-      }  
-      
-      # compute R^2
-      if (is.null(weights)) {
-        mss <- if (attr(object$terms, "intercept")) {
-          sum((fitted - mean(fitted))^2)
-        } else { sum(fitted^2) }
-        rss <- sum(residuals^2)
-      } else {
-        mss <- if (attr(object$terms, "intercept")) {
-          m <- sum(weights * fitted / sum(weights))
-          sum(weights * (fitted - m)^2)
-        } else { sum(weights * fitted^2) }
-        rss <- sum(weights * residuals^2)
-      }
-      R2.reduced <- mss / (mss + rss)
-      
-      # compute residual degreees of freedom, corrected for equality constraints.
-      df.residual <- n - (p - qr(Amat[0:meq,])$rank)
-      # compute weighted residuals
-      if (is.null(weights)) {
-        s2 <- sum(residuals^2) / df.residual  
-      } else {
-        s2 <- sum(weights * residuals^2) / df.residual
-      }
-    } else { 
-      stop("mlm not supported. Switch to conMLM.")
-    }
-
+    if (debug) {
+      print(list(loglik.restr = ll.restr))
+    }  
+    
+    # compute R^2
+    mss <- if (attr(object$terms, "intercept")) {
+      colSums((fitted - colMeans(fitted))^2)
+    } else { colSums(fitted^2) }
+    rss <- colSums(residuals^2)
+    R2.reduced <- mss / (mss + rss)
+    
+    # compute residual degreees of freedom, corrected for equality constraints.
+    df.residual <- df.residual + qr(Amat[0:meq,])$rank
+   
     OUT <- list(CON         = CON,
                 call        = mc,
                 timing      = timing,
@@ -268,9 +256,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 b.restr     = b.restr,
                 residuals   = residuals, # unweighted residuals
                 fitted      = fitted,
-                weights     = weights,
                 df.residual = object$df.residual,
-                R2.org      = so$r.squared, 
+                R2.org      = R2.org, 
                 R2.reduced  = R2.reduced,
                 s2          = s2,
                 loglik      = ll.restr, 
@@ -280,65 +267,67 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 neq         = meq, 
                 wt.bar      = wt.bar,
                 iact        = out.QP$iact, 
+                Niter       = Niter,
                 bootout     = NULL, 
                 control     = control)
   }
   
   # original object
   OUT$model.org <- object
-  # type standard error
+  # # type standard error
   OUT$se <- se
-  OUT$information <- 1/s2 * crossprod(X)
-  # compute standard errors based on the augmented inverted information matrix or
-  # based on the standard bootstrap or model.based bootstrap
+  # OUT$information <- 1/s2 * crossprod(X)
+  OUT$information <- NULL
+  # # compute standard errors based on the augmented inverted information matrix or
+  # # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information.inv <- con_augmented_information(information  = OUT$information, 
+      information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
-                                                   X            = X, 
-                                                   b.unrestr    = b.unrestr, 
+                                                   X            = X,
+                                                   b.unrestr    = b.unrestr,
                                                    b.restr      = b.restr,
-                                                   Amat         = Amat, 
-                                                   bvec         = bvec, 
-                                                   meq          = meq) 
-          
+                                                   Amat         = Amat,
+                                                   bvec         = bvec,
+                                                   meq          = meq)
+
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       if (debug) {
         print(list(information = OUT$information))
       }
     } else if (se == "boot.model.based") {
-      
+
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
-          stop("Restriktor ERROR: no restriktions on intercept possible",
-               "\n       for 'se = boot.model.based' bootstrap method.")
+        stop("Restriktor ERROR: no restriktions on intercept possible",
+             "\n       for 'se = boot.model.based' bootstrap method.")
       }
-      
-      OUT$bootout <- con_boot_lm(object      = object, 
-                                 B           = B, 
-                                 fixed       = TRUE, 
+
+      OUT$bootout <- con_boot_lm(object      = object,
+                                 B           = B,
+                                 fixed       = TRUE,
                                  Amat        = Amat,
-                                 bvec        = bvec, 
-                                 meq         = meq, 
+                                 bvec        = bvec,
+                                 meq         = meq,
                                  se          = "none",
                                  mix.weights = "none",
-                                 parallel    = parallel, 
-                                 ncpus       = ncpus, 
+                                 parallel    = parallel,
+                                 ncpus       = ncpus,
                                  cl          = cl)
       if (debug) {
         print(list(bootout = OUT$bootout))
       }
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_lm(object      = object, 
-                                 B           = B, 
-                                 fixed       = FALSE, 
+      OUT$bootout <- con_boot_lm(object      = object,
+                                 B           = B,
+                                 fixed       = FALSE,
                                  Amat        = Amat,
-                                 bvec        = bvec, 
-                                 meq         = meq, 
+                                 bvec        = bvec,
+                                 meq         = meq,
                                  se          = "none",
                                  mix.weights = "none",
-                                 parallel    = parallel, 
-                                 ncpus       = ncpus, 
+                                 parallel    = parallel,
+                                 ncpus       = ncpus,
                                  cl          = cl)
       if (debug) {
         print(list(bootout = OUT$bootout))
@@ -350,7 +339,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
-  class(OUT) <- c("restriktor", "conLM")
-    
+  class(OUT) <- c("restriktor", "conMLM")
+  
   OUT
 }

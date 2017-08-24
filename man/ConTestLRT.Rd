@@ -2,6 +2,7 @@
 \alias{conTestLRT}
 \alias{conTestLRT.conLM}
 \alias{conTestLRT.conGLM}
+\alias{conTestLRT.conMLM}
 
 \title{Likelihood-ratio-bar test for iht}
 \description{\code{conTestLRT} tests linear equality and/or 
@@ -20,10 +21,15 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
             boot = "no", R = 9999, p.distr = rnorm,  
             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
             verbose = FALSE, control = NULL, \dots)           
+
+\method{conTestLRT}{conMLM}(object, type = "A", neq.alt = 0, 
+            boot = "no", R = 9999, p.distr = rnorm,  
+            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+            verbose = FALSE, control = NULL, \dots)                     
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conGLM}.}  
+  \item{object}{an object of class \code{conLM}, \code{conMLM} or \code{conGLM}.}  
   
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}
@@ -111,7 +117,7 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
   of no equality constraints.
   \item Type global: equal to Type A but H0 contains additional 
   equality constraints. This test is analogue to the global 
-  LR-test in lm, where all coefficients but the intercept equal 0.
+  F-test in lm, where all coefficients but the intercept equal 0.
 }
 
 The null-distribution of hypothesis test Type C is based on a 
@@ -139,26 +145,26 @@ F-distributions.
   \item{Amat}{constraints matrix.}
   \item{bvec}{vector of right-hand side elements.}
   \item{meq}{number of equality constraints.}
-  \item{meq.alt}{same as input neq.alt.}
+  \item{meq_alt}{same as input neq.alt.}
   \item{iact}{number of active constraints.}
   \item{type}{same as input.}
   \item{test}{same as input.}
   \item{Ts}{test-statistic value.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b.eqrestr}{equality restricted regression coefficients. 
+  \item{b_eqrestr}{equality restricted regression coefficients. 
   Only available for \code{type = "A"} and \code{type = "global"}, 
   else \code{b.eqrestr = NULL}.}
-  \item{b.unrestr}{unrestricted regression coefficients.}
-  \item{b.restr}{restricted regression coefficients.}
-  \item{b.restr.alt}{restricted regression coefficients under HA 
+  \item{b_unrestr}{unrestricted regression coefficients.}
+  \item{b_restr}{restricted regression coefficients.}
+  \item{b_restr_alt}{restricted regression coefficients under HA 
   if some equality constraints are maintained. Only available for 
-  \code{type = "B"} else \code{b.restr.alt = NULL}.}
+  \code{type = "B"} else \code{b_restr_alt = NULL}.}
   \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2.org}{unrestricted R-squared, not available for objects of class \code{conGLM}.}
-  \item{R2.reduced}{restricted R-squared, not available for objects of class \code{conGLM}.}
+  \item{R2_org}{unrestricted R-squared, not available for objects of class \code{conGLM}.}
+  \item{R2_reduced}{restricted R-squared, not available for objects of class \code{conGLM}.}
   \item{boot}{same as input.}
-  \item{model.org}{original model.}
+  \item{model_org}{original model.}
 }
 
 \references{
@@ -184,11 +190,11 @@ Statistical Inference}. Wiley, New York
 DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
 # fit unrestricted linear model
-fit1.lm <- lm(Age ~ -1 + Group, data = DATA1)
+fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
 
 # the variable names can be used to impose constraints on
 # the corresponding regression parameters.
-coef(fit1.lm)
+coef(fit1_lm)
 
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
@@ -196,13 +202,13 @@ coef(fit1.lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1.lm, myConstraints1, test = "LRT")
+conTest(fit1_lm, myConstraints1, test = "LRT")
 
 
 # another way is to first fit the restricted model
-fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
+fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
 
-conTest(fit.restr1, test = "LRT")
+conTest(fit_restr1, test = "LRT")
 
 \dontrun{ 
   # Or in matrix notation.
@@ -211,7 +217,7 @@ conTest(fit.restr1, test = "LRT")
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  conTest(fit1.lm, constraints = Amat1, test = "LRT",
+  conTest(fit1_lm, constraints = Amat1, test = "LRT",
           rhs = myRhs1, neq = myNeq1)
 }            
 
@@ -227,26 +233,26 @@ y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
 # fit unrestricted linear model
-fit2.lm <- lm(y ~ -1 + group, data = DATA2)
-coef(fit2.lm)
+fit2_lm <- lm(y ~ -1 + group, data = DATA2)
+coef(fit2_lm)
 
 ## example 2: increasing means
 myConstraints2 <- ' group1 < group2
                     group2 < group3
                     group3 < group4 '
 
-# compute LR-test for hypothesis test Type A and compute the tail 
+# compute F-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2.lm, constraints = myConstraints2, type = "A", test = "LRT",
+conTest(fit2_lm, constraints = myConstraints2, type = "A", test = "LRT",
         boot = "parametric", R = 9)
 
 
 # or fit restricted linear model
-fit2.restr <- restriktor(fit2.lm, constraints = myConstraints2)
+fit2_con <- restriktor(fit2_lm, constraints = myConstraints2)
 
-conTest(fit2.restr, test = "LRT")
+conTest(fit2_con, test = "LRT")
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -256,7 +262,7 @@ conTest(fit2.restr, test = "LRT")
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2.restr, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+  conTest(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
           type = "A", test = "LRT", boot = "parametric", R = 9)
 }            
 
@@ -265,7 +271,7 @@ conTest(fit2.restr, test = "LRT")
 myConstraints3 <- ' group1 == group2
                     group3  < group4 '
 
-conTest(fit2.lm, constraints = myConstraints3, type = "B", 
+conTest(fit2_lm, constraints = myConstraints3, type = "B", 
         test = "LRT", neq.alt = 1)
 
 # fit resticted model and compute model-based bootstrapped 
@@ -273,10 +279,9 @@ conTest(fit2.lm, constraints = myConstraints3, type = "B",
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit3.restr <- restriktor(fit2.lm, constraints = myConstraints3, 
-                         se = "boot.model.based", B = 9)
-
-conTest(fit3.restr, type = "B", test = "LRT", neq.alt = 1)
+fit3_con <- restriktor(fit2_lm, constraints = myConstraints3, 
+                       se = "boot.model.based", B = 9)
+conTest(fit3_con, type = "B", test = "LRT", neq.alt = 1)
 
 
 ## example 4:
@@ -293,16 +298,16 @@ y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10)
 DATA3 = data.frame(cbind(y, X, Z))
 
 # fit linear model with interaction
-fit4.lm <- lm(y ~ X*Z, data = DATA3)
+fit4_lm <- lm(y ~ X*Z, data = DATA3)
 
 # constraint syntax
 myConstraints4 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-conTest(fit4.lm, constraints = myConstraints4, test = "LRT")
+conTest(fit4_lm, constraints = myConstraints4, test = "LRT")
 
 # or
-fit4.restr <- restriktor(fit4.lm, constraints = ' AVE := X + 16.86137*X.Z; 
-                                                  AVE > 0 ')
-conTest(fit4.restr, test = "LRT")
+fit4_con <- restriktor(fit4_lm, constraints = ' AVE := X + 16.86137*X.Z; 
+                                                AVE > 0 ')
+conTest(fit4_con, test = "LRT")
 }

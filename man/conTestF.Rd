@@ -272,9 +272,9 @@ conTest(fit2.lm, constraints = myConstraints2, type = "A",
 
 
 # or fit restricted linear model
-fit2.restr <- restriktor(fit2.lm, constraints = myConstraints2)
+fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
-conTest(fit2.restr)
+conTest(fit2.con)
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -284,7 +284,7 @@ conTest(fit2.restr)
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2.restr, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+  conTest(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
           type = "A", boot = "parametric", R = 9)
 }            
 
@@ -300,10 +300,9 @@ conTest(fit2.lm, constraints = myConstraints3, type = "B", neq.alt = 1)
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit3.restr <- restriktor(fit2.lm, constraints = myConstraints3, 
-                         se = "boot.model.based", B = 9)
-
-conTest(fit3.restr, type = "B", neq.alt = 1)
+fit3.con <- restriktor(fit2.lm, constraints = myConstraints3, 
+                       se = "boot.model.based", B = 9)
+conTest(fit3.con, type = "B", neq.alt = 1)
 
 
 ## example 4:
@@ -329,7 +328,7 @@ myConstraints4 <- ' AVE := X + 16.86137*X.Z;
 conTest(fit4.lm, constraints = myConstraints4)
 
 # or
-fit4.restr <- restriktor(fit4.lm, constraints = ' AVE := X + 16.86137*X.Z; 
-                                                  AVE > 0 ')
-conTest(fit4.restr) 
+fit4.con <- restriktor(fit4.lm, constraints = ' AVE := X + 16.86137*X.Z; 
+                                                AVE > 0 ')
+conTest(fit4.con)
 }

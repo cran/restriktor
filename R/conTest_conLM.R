@@ -56,18 +56,15 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -104,7 +101,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     # call quadprog
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = AmatG,
                                bvec      = bvecG, 
@@ -112,18 +109,16 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                                  control$maxit))$qp$solution
     # fix estimates < tol to zero 
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     # compute global test statistic
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -131,23 +126,21 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+                                               control$maxit))$qp$solution
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
+      Ts <- c( t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr) ) 
     } else {
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b.unrestr = b.unrestr,
+                                     #b.unrestr = b.unrestr,
                                      w         = w, 
                                      Amat      = Amat[1:meq.alt,,drop = FALSE],
                                      bvec      = bvec[1:meq.alt], 
@@ -155,14 +148,12 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                      absval    = ifelse(is.null(control$absval), 1e-09, 
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                        control$maxit))$solution
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps),                                        
-                                              control$tol)] <- 0L
+                                                        control$maxit))$qp$solution
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
-        Ts <- c(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
+        Ts <- c( t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt) ) 
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -175,9 +166,9 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # or via bootstrapping. The pvalue can also be computed directly via 
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -185,10 +176,10 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    wt.mix <- wt.bar
-    attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.mix
-    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "wt.bar.method")
+    #wt.mix <- wt.bar
+    #attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.bar
+    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
    } else if (boot == "parametric") {
      
      if (!is.function(p.distr)) {
@@ -210,7 +201,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
-                                          seed     = seed, 
+                                          seed     = seed,
+                                          control  = control,
                                           verbose  = verbose)
    } else if (boot == "model.based") {
      pvalue <- con_pvalue_boot_model_based(object, 
@@ -223,6 +215,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                            ncpus    = ncpus,
                                            cl       = cl, 
                                            seed     = seed, 
+                                           control  = control,
                                            verbose  = verbose)
    } else {
      pvalue <- as.numeric(NA)
@@ -312,18 +305,15 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -359,7 +349,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   if (type == "global") {  
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr, 
+                               #b.unrestr = b.unrestr, 
                                w         = w, 
                                Amat      = AmatG,
                                bvec      = bvecG, 
@@ -367,29 +357,24 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                  control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                 control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+                                                 control$maxit))$qp$solution
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
-    
     b.eqrestr <- as.vector(b.eqrestr)
-    fitted <- X %*% b.eqrestr
-    residuals <- y - fitted
     
-    object.eqrestr <- list()
-    object.eqrestr$residuals <- residuals
+    fitted0 <- X %*% b.eqrestr
+    residuals0 <- y - fitted0
+    object.eqrestr <- list(residuals = residuals0)
     object.eqrestr$weights   <- object$weights
-    ll.eqrestr <- con_loglik_lm(object.eqrestr)
     
-    ll0 <- ll.eqrestr
+    ll0 <- con_loglik_lm(object.eqrestr)
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -397,29 +382,30 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+                                                  control$maxit))$qp$solution
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
-    
     b.eqrestr <- as.vector(b.eqrestr)
-    fitted <- X %*% b.eqrestr
-    residuals <- y - fitted
     
-    object.eqrestr <- list()
-    object.eqrestr$residuals <- residuals
-    object.eqrestr$weights   <- object$weights
-    ll.eqrestr <- con_loglik_lm(object.eqrestr)
+    fitted0 <- X %*% b.eqrestr
+    residuals0 <- y - fitted0
+    object.eqrestr <- list(residuals = residuals0)
+    object.eqrestr$weights <- object$weights
     
-    ll0 <- ll.eqrestr
+    ll0 <- con_loglik_lm(object.eqrestr)
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
       if (meq.alt == 0L) {
+        
         ll0 <- object$loglik
-        ll1 <- logLik(model.org)
+        
+        fitted1 <- X %*% object$b.unrestr
+        residuals1 <- y - fitted1
+        object.unrestr <- list(residuals = residuals1)
+        object.unrestr$weights   <- object$weights
+        ll1 <- con_loglik_lm(object.unrestr)
         
         Ts <- -2*(ll0 - ll1)
       }
@@ -428,7 +414,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b.unrestr = b.unrestr,
+                                     #b.unrestr = b.unrestr,
                                      w         = w,
                                      Amat      = Amat[1:meq.alt,,drop=FALSE],
                                      bvec      = bvec[1:meq.alt], 
@@ -436,23 +422,17 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                      absval    = ifelse(is.null(control$absval), 1e-09, 
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                        control$maxit))$solution
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
-                                              sqrt(.Machine$double.eps),                                        
-                                              control$tol)] <- 0L
+                                                        control$maxit))$qp$solution
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
 
-        b.restr.alt <- as.vector(b.restr.alt)
-        fitted <- X %*% b.restr.alt
-        residuals <- y - fitted
-        
-        object.restr.alt <- list()
-        object.restr.alt$residuals <- residuals
-        object.restr.alt$weights   <- object$weights
-        ll.restr.alt <- con_loglik_lm(object.restr.alt)
-        
         ll0 <- object$loglik
-        ll1 <- ll.restr.alt
+        
+        fitted1 <- X %*% b.restr.alt
+        residuals1 <- y - fitted1
+        object.restr.alt <- list(residuals = residuals1)
+        object.restr.alt$weights <- object$weights
+        ll1 <- con_loglik_lm(object.restr.alt)
         
         Ts <- -2*(ll0 - ll1)
       }
@@ -462,9 +442,9 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     }
   } 
   
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") { 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -601,18 +581,15 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -648,7 +625,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if (type == "global") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = AmatG, 
                                bvec      = bvecG, 
@@ -656,14 +633,12 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+                                                  control$maxit))$qp$solution
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     res0 <- y - X %*% b.eqrestr
-    res1 <- residuals(object)
+    res1 <- y - X %*% object$b.restr
     # score vector
     df0 <- n - (p - nrow(AmatG))  
     s20 <- sum(res0^2) / df0
@@ -674,7 +649,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
     ###############################################
     # df0 <- n - (p - nrow(AmatG))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
@@ -688,7 +663,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -696,14 +671,12 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+                                                  control$maxit))$qp$solution
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     res0 <- y - X %*% b.eqrestr
-    res1 <- residuals(object)
+    res1 <- y - X %*% object$b.restr
     # score vector
     df0 <- n - (p - nrow(Amat))
     s20 <- sum(res0^2) / df0
@@ -714,7 +687,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
     #############################################
     # df0 <- n - (p - nrow(Amat))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
@@ -727,8 +700,11 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     ###############################################
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      res0 <- residuals(object)
-      res1 <- residuals(model.org)
+      res0 <- y - X %*% object$b.restr
+      res1 <- y - X %*% object$b.unrestr
+      
+      #res0 <- residuals(object)
+      #res1 <- residuals(model.org)
       # score vector
       df0 <- n - (p - qr(Amat[0:meq,])$rank)
       s20 <- sum(res0^2) / df0
@@ -739,7 +715,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       # information matrix under the null-hypothesis
       I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
       # score test-statistic
-      Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+      Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
       #########
       # df0 <- n - (p - qr(Amat[0:meq,])$rank)
       # df1 <- n - p
@@ -755,7 +731,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b.unrestr = b.unrestr,
+                                     #b.unrestr = b.unrestr,
                                      w         = w,
                                      Amat      = Amat[1:meq.alt,,drop=FALSE],
                                      bvec      = bvec[1:meq.alt], 
@@ -763,14 +739,15 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                      absval    = ifelse(is.null(control$absval), 1e-09,
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04,
-                                                        control$maxit))$solution
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
-                                              sqrt(.Machine$double.eps),                                        
-                                              control$tol)] <- 0L
+                                                        control$maxit))$qp$solution
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         
-        res0 <- residuals(object)
+        res0 <- y - X %*% object$b.restr
         res1 <- y - X %*% b.restr.alt
+        
+        # res0 <- residuals(object)
+        # res1 <- y - X %*% b.restr.alt
         # score vector
         df0 <- n - (p - qr(Amat[0:meq,])$rank)
         s20 <- sum(res0^2) / df0
@@ -781,7 +758,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         # information matrix
         I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
         # score test-statistic
-        Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+        Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
         ########################
         # df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
         # s20 <- sum((y - X %*% b.restr)^2) / df0
@@ -798,9 +775,9 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
   } 
   
-  if (!(attr(object$wt.bar, "wt.bar.method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
