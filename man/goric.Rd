@@ -6,8 +6,8 @@
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2), 
-      debug = FALSE)
+\usage{goric(object, \dots, complement = FALSE, bound = NULL, 
+             digits = max(3, getOption("digits") - 2), debug = FALSE)
 
 \method{print}{goric}(x, digits = max(3, getOption("digits") - 2), \dots)
 
@@ -22,6 +22,8 @@ weights, which are comparable to the Akaike weights.
   
   \item{complement}{logical; if TRUE the complement is computed. The complement can only
   be computed for one restriktor object at a time.}
+  
+  \item{bound}{not used yet.}
   
   \item{digits}{the number of significant digits to use when printing.}
   
@@ -98,5 +100,4 @@ fit5.con <- restriktor(fit2.mlm, constraints = myConstraints2)
 
 # fit5.con verus the complement
 goric(fit5.con, complement = TRUE)
-
 }

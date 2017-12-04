@@ -41,18 +41,19 @@ export("restriktor",
        "conTestF.conLM", "conTestF.conRLM", "conTestF.conGLM", 
        "conTestLRT.conLM", "conTestLRT.conGLM", "conTestLRT.conMLM", 
        "conTestScore.conLM", "conTestScore.conRLM", "conTestScore.conGLM", 
-       "conTestWald.conRLM", "conTestWald2.conRLM",
+       "conTestWald.conRLM", #"conTestWald2.conRLM",
        "conTestC.restriktor", 
        "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
        "goric", "print.goric",
        "print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
-       "print.conTest", 
+       "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
+S3method(logLik, restriktor)
 S3method(print, restriktor)
 S3method(print, conTest)
 S3method(print, summary.restriktor)

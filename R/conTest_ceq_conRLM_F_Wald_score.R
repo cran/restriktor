@@ -8,7 +8,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   }
   
   test <- tolower(test)
-  stopifnot(test %in% c("f","wald","wald2","score"))
+  stopifnot(test %in% c("f","wald","score"))
   
   model.org <- object$model.org
   y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
@@ -23,7 +23,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   # unrestrikted scale estimate
   scale <- model.org$s
   # scale estimate used for the standard errors
-  stddev <- summary(model.org)$stddev
+  #scale <- summary(model.org)$stddev
   # restriktion stuff
   CON  <- object$CON
   
@@ -57,31 +57,33 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
-    } else if (test == "wald" || test == "score") {
-      WaldScore.out <- robustWaldScores(x         = X, 
-                                        y         = y, 
-                                        b.eqrestr = b.eqrestr, 
-                                        b.restr   = b.unrestr, 
-                                        b.unrestr = b.unrestr,
-                                        Amat      = Amat,
-                                        scale     = scale, 
-                                        test      = test, 
-                                        cc        = ifelse(is.null(cc), 4.685061, cc))
-      OUT <- append(CON, WaldScore.out)
+    } else if (test == "score") {
+      Score.out <- robustScores(x         = X, 
+                                y         = y, 
+                                b.eqrestr = b.eqrestr, 
+                                b.restr   = b.unrestr, 
+                                b.unrestr = b.unrestr,
+                                Amat      = Amat,
+                                scale     = scale, 
+                                test      = test, 
+                                cc        = ifelse(is.null(cc), 4.685061, cc))
+      OUT <- append(CON, Score.out)
       OUT$df <- nrow(Amat)
       OUT$df.residual <- df.residual(object) 
       # p-value based on chisq
       OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df) 
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
-    } else if (test == "wald2") {  
-      Wald2.out <- robustWaldXX(x         = X, 
-                                b.eqrestr = b.eqrestr, 
-                                b.restr   = b.unrestr, 
-                                b.unrestr = b.unrestr,
-                                Amat      = Amat,
-                                tau       = stddev)
-      OUT <- append(CON, Wald2.out)
+    } else if (test == "wald") {  
+      Wald.out <- robustWald(x         = X, 
+                             y         = y,
+                             b.eqrestr = b.eqrestr, 
+                             b.restr   = b.unrestr, 
+                             b.unrestr = b.unrestr,
+                             scale     = scale,
+                             Amat      = Amat,
+                             cc        = ifelse(is.null(cc), 4.685061, cc))
+      OUT <- append(CON, Wald.out)
       
       OUT$df <- nrow(Amat)
       OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df) 

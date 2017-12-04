@@ -1,24 +1,17 @@
 \name{conTestWald}
 \alias{conTestWald}
 \alias{conTestWald.conRLM}
-\alias{conTestWald2.conRLM}
 
 \title{Wald-bar test for robust iht}
-\description{\code{conTestWald} and \code{conTestWald2} tests linear equality and/or 
-inequality restricted hypotheses for linear models by Wald-tests. It can be 
-used directly and is called by the \code{conTest} function if \code{test = "Wald"}
-or \code{test = "Wald2"}.
-
+\description{\code{conTestWald} tests linear equality and/or 
+inequality restricted hypotheses for linear models by Wald-tests. 
+It can be used directly and is called by the \code{conTest} function 
+if \code{test = "Wald"}.
 }
 
 \usage{
 
 \method{conTestWald}{conRLM}(object, type = "A", neq.alt = 0, 
-           boot = "no", R = 9999, p.distr = rnorm,  
-           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-           verbose = FALSE, control = NULL, \dots)
-
-\method{conTestWald2}{conRLM}(object, type = "A", neq.alt = 0, 
            boot = "no", R = 9999, p.distr = rnorm,  
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
@@ -65,8 +58,6 @@ or \code{test = "Wald2"}.
   distribution. The random generation distributional parameters will 
   be passed in via \ldots.}
 
-  
-  
   \item{parallel}{the type of parallel operation to be used 
   (if any). If missing, the default is set "no".}
   
@@ -231,7 +222,7 @@ conTest(fit.restr1, test = "Wald")
 ## Artificial examples ##
 #########################
 # generate data
-n <- 20
+n <- 30
 means <- c(1,2,1,3)
 nm <- length(means)
 group <- as.factor(rep(1:nm, each = n))
