@@ -1,5 +1,5 @@
-a7c0ba55f92d453f9ab150c541d1b414 *DESCRIPTION
-83c2d6476e1f2e71cc59011d66119f31 *NAMESPACE
+b5a9acea6cb3607ac00d78a498c3b151 *DESCRIPTION
+5cf353534fbeb96c843e69e1781651b9 *NAMESPACE
 ab909378c615a67d933f48a4880721f8 *R/Gaussian_Elimination.R
 eec0ab2631a876a6ea657dd6267db922 *R/conGLM.R
 4eaff571edf88297692d1aad271e470f *R/conGLM_fit.R
@@ -8,7 +8,7 @@ a5812b421fa56a88f7844676ff0e9adc *R/conMLM.R
 5da112330854a592f6ff279aa91e3021 *R/conRLM.R
 023752d218b022d0ade9d3e0f0dfe22e *R/conRLM_fit.R
 fb2070fde1ba2dc5b08455d3e547bb13 *R/conRLM_tests_F_Wald_score.R
-dff984f5e7d30fc10d16523940fea3b6 *R/conTest.R
+2f250bd0e000137416950c70a86a4fb1 *R/conTest.R
 8ab39c2cc1e03e39e4e6d2ec450d0216 *R/conTest_ceq_conGLM_F_Wald_score.R
 4c26fa0866e03417696242134ec47732 *R/conTest_ceq_conLM_F_Wald_score.R
 78d5f625dd944d6a50f2dc8638fec3b5 *R/conTest_ceq_conRLM_F_Wald_score.R
@@ -23,7 +23,7 @@ c3f1829a5754fd155a27dc6ab950a1f0 *R/con_augmented_information.R
 92f015c05b0b3e4f2eb461dc0b29d407 *R/con_boot_data.R
 91b38c0d835cb5bcfb80428ba8eccabe *R/con_boot_fixed.R
 7606d11a935876854283ea2c7724a526 *R/con_constraints.R
-f6a4bd11ba195f8855e5b12f2280a6fa *R/con_goric.R
+5e7b6f54cb065c7c515634ef5e3b46b1 *R/con_goric.R
 bb5b0756f80b90f7d58e5d70e2d4ad49 *R/con_iht.R
 6202b5ad674ad1bda432e92f982bfe8b *R/con_loglik.R
 07707bcf3d54979884ee138888b8257e *R/con_partable.R
@@ -32,7 +32,7 @@ bb5b0756f80b90f7d58e5d70e2d4ad49 *R/con_iht.R
 dd9a0d4ef423c386f42d2b2eb502fc66 *R/con_sandwich.R
 a6566886348c8087a2385d8d558eefb7 *R/con_solver.R
 0371ad2fd990f55f6f6863da20365751 *R/con_weights.R
-3b74b16489a67be62efabc3ca700440d *R/restriktor.R
+5334f483473b9260fadb1d61af9a5ada *R/restriktor.R
 4bdc3fe53d22175f85635d723d4f11e3 *R/restriktor_print.R
 f095f36d6c86168c625714574092067c *R/restriktor_print_summary.R
 f55a2b6886eb5b7088461b3c3ac61e22 *R/restriktor_summary.R
@@ -44,7 +44,7 @@ bcac6af72d15df19900518a52031eaba *data/Burns.rda
 0b467b8b979454158aac485789739231 *data/Exam.rda
 385aa26b68fbec10877797e27675307b *data/Hurricanes.rda
 74265b2b0203790c56ecd7f2a98ee22c *data/ZelazoKolb1972.rda
-82581d69049e6666925d14da8698b511 *inst/NEWS
+3e24ec5307f35d0c01efc7f5b6b4085c *inst/NEWS
 4f45c0ea2e4e246263bb1fafd2dd8980 *man/AngerManagement.Rd
 85edeb73e6072eda2315a4ccf8c0889a *man/Burns.Rd
 ddd5dc9de23326d18b93e4cf713e66f5 *man/ConTest.Rd
@@ -59,9 +59,9 @@ af1f6de4d4074cd0c61bb1cfa9c690fa *man/ConTestC.Rd
 31630ecf1d38074356626cac51a58968 *man/conTest_ceq.Rd
 37ad4b28e183d6ce3d777acf6f6fb6a9 *man/conTest_methods.Rd
 10ba9a16da93e44240548edee751cc9e *man/conTest_summary.Rd
-54c9d051012608be637d55f70f5ce40a *man/goric.Rd
+64db463b9ee9ff03d5f486926a8880f9 *man/goric.Rd
 15c0cf2f705c83a1806389a412f63f1d *man/mixingWeights.Rd
-d4754fcec6523b1e7f2139bc3b9b48fc *man/restriktor-package.rd
+9d579995e9c08341b5b81e7cc9384816 *man/restriktor-package.rd
 0b8f401949a6bfaadee965d11bbdcaf9 *man/restriktor.Rd
 38c3a2759431a51b3d8c2076370e9674 *man/restriktor_methods.Rd
 aa223ae5a84343b091b19f11e2ef29a0 *tests/testCases.R

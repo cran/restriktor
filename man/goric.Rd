@@ -51,6 +51,9 @@ penalty term, goric, and the GORIC weights values.
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
 \emph{Biometrika}, \bold{98}, 2, 495--501.
+
+Vanbrabant, L. and Kuiper, R. (n.d.). Giving the complement a compliment: 
+Evaluating a theory-based hypothesis against its complement using the GORIC. 
 }
 
 \author{Leonard Vanbrabant and Rebecca Kuiper}

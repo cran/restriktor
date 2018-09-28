@@ -1,7 +1,7 @@
-Changes in Version 0.1-55
- o Released on CRAN (February 21, 2017)
+Changes in Version 0.1-80.811
+ o Released on CRAN (September 26, 2018)
+ o This is mainly a small maintenance release to pass the cran checks 
  
- o Check the restriktor.org website for more information and examples.
  
 Changes in Version 0.1-70
  o Released on CRAN (August 25, 2017)
@@ -30,3 +30,9 @@ Changes in Version 0.1-70
  linear model. Currently, no standard errors (yet).
  
  o Added support; likelihood-ratio test-statistic for objects of class mlm.
+ 
+ 
+ Changes in Version 0.1-55
+ o Released on CRAN (February 21, 2017)
+ 
+ o Check the restriktor.org website for more information and examples.
