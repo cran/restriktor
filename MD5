@@ -1,4 +1,4 @@
-b5a9acea6cb3607ac00d78a498c3b151 *DESCRIPTION
+8364347baa2bba6a0716aadb84320a41 *DESCRIPTION
 5cf353534fbeb96c843e69e1781651b9 *NAMESPACE
 ab909378c615a67d933f48a4880721f8 *R/Gaussian_Elimination.R
 eec0ab2631a876a6ea657dd6267db922 *R/conGLM.R
@@ -8,7 +8,7 @@ a5812b421fa56a88f7844676ff0e9adc *R/conMLM.R
 5da112330854a592f6ff279aa91e3021 *R/conRLM.R
 023752d218b022d0ade9d3e0f0dfe22e *R/conRLM_fit.R
 fb2070fde1ba2dc5b08455d3e547bb13 *R/conRLM_tests_F_Wald_score.R
-2f250bd0e000137416950c70a86a4fb1 *R/conTest.R
+33c43d3748eb35d0d2db32dd40412f7b *R/conTest.R
 8ab39c2cc1e03e39e4e6d2ec450d0216 *R/conTest_ceq_conGLM_F_Wald_score.R
 4c26fa0866e03417696242134ec47732 *R/conTest_ceq_conLM_F_Wald_score.R
 78d5f625dd944d6a50f2dc8638fec3b5 *R/conTest_ceq_conRLM_F_Wald_score.R
@@ -23,7 +23,7 @@ c3f1829a5754fd155a27dc6ab950a1f0 *R/con_augmented_information.R
 92f015c05b0b3e4f2eb461dc0b29d407 *R/con_boot_data.R
 91b38c0d835cb5bcfb80428ba8eccabe *R/con_boot_fixed.R
 7606d11a935876854283ea2c7724a526 *R/con_constraints.R
-5e7b6f54cb065c7c515634ef5e3b46b1 *R/con_goric.R
+8df01adf6fdc2e80fe07e4a0269cfc0c *R/con_goric.R
 bb5b0756f80b90f7d58e5d70e2d4ad49 *R/con_iht.R
 6202b5ad674ad1bda432e92f982bfe8b *R/con_loglik.R
 07707bcf3d54979884ee138888b8257e *R/con_partable.R
@@ -38,13 +38,13 @@ f095f36d6c86168c625714574092067c *R/restriktor_print_summary.R
 f55a2b6886eb5b7088461b3c3ac61e22 *R/restriktor_summary.R
 afbfd155c6f6d3f4d8ff4df91a2e87f5 *R/utilities.R
 63eac6a2eb3399ebccd1558b3124353d *R/zzz.R
-2ad11be00d914426c7897b3c24f26b0f *README
+f0386485048e017a9b3bcba73926a053 *README
 ca015a0ff006d3f85571a7fd9467603e *data/AngerManagement.rda
 bcac6af72d15df19900518a52031eaba *data/Burns.rda
 0b467b8b979454158aac485789739231 *data/Exam.rda
 385aa26b68fbec10877797e27675307b *data/Hurricanes.rda
 74265b2b0203790c56ecd7f2a98ee22c *data/ZelazoKolb1972.rda
-3e24ec5307f35d0c01efc7f5b6b4085c *inst/NEWS
+057c67361cc167e2c4ad9f7021410f90 *inst/NEWS
 4f45c0ea2e4e246263bb1fafd2dd8980 *man/AngerManagement.Rd
 85edeb73e6072eda2315a4ccf8c0889a *man/Burns.Rd
 ddd5dc9de23326d18b93e4cf713e66f5 *man/ConTest.Rd
@@ -61,7 +61,7 @@ af1f6de4d4074cd0c61bb1cfa9c690fa *man/ConTestC.Rd
 10ba9a16da93e44240548edee751cc9e *man/conTest_summary.Rd
 64db463b9ee9ff03d5f486926a8880f9 *man/goric.Rd
 15c0cf2f705c83a1806389a412f63f1d *man/mixingWeights.Rd
-9d579995e9c08341b5b81e7cc9384816 *man/restriktor-package.rd
+2c5d23aeacbb0d80d59708ba8c33ebfa *man/restriktor-package.rd
 0b8f401949a6bfaadee965d11bbdcaf9 *man/restriktor.Rd
 38c3a2759431a51b3d8c2076370e9674 *man/restriktor_methods.Rd
 aa223ae5a84343b091b19f11e2ef29a0 *tests/testCases.R

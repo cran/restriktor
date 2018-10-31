@@ -29,7 +29,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
   
   if (complement && length(conlist) > 1L) {
     complement <- FALSE
-    warning("Restriktor WARNING: if complement = TRUE, only one order-constrained hypothesis\n",
+    warning("Restriktor WARNING: if complement = TRUE, only one order-restricted hypothesis\n",
             "                      is allowed (for now). Therefore, the complement is set to FALSE.")
   } 
   
@@ -49,7 +49,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
     bvec <- object$rhs
     # extract equalities and inequalities
     if (meq > 0) {
-      Amat.ceq <- Amat[1:meq, ,drop = FALSE]
+      Amat.ceq <- Amat[1:meq, , drop = FALSE]
       bvec.ceq <- bvec[1:meq]
       Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
       bvec.ciq <- bvec[-c(1:meq)]
@@ -61,7 +61,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
     }
     
     if (!is.null(bound) && meq == 0L) {
-      warning("restriktor WARNING: bounds are only available for equality constraints \n",
+      warning("restriktor WARNING: bounds are only available for equality restrictions \n",
               "                      and are therefore ignored.")
       bound <- NULL
     } 
@@ -225,6 +225,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
           llm
         }
       }
+#################################### no bounds ################################    
     } else if (is.null(bound)) {
       # check if any equality constraint is violated
       check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
@@ -282,7 +283,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
         }
       } else if (all(c(Amat) == 0L)) {
         # unconstrained setting
-        stop("Restriktor ERROR: no complement exists for the unconstrained hypothesis.")
+        stop("Restriktor ERROR: no complement exists for the unrestricted hypothesis.")
       } else {
         stop("Restriktor ERROR: you might have found a bug, please contact me!")
       }

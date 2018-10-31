@@ -1,3 +1,8 @@
+Changes in Version 0.1-80.911
+ o Released on CRAN (October 31, 2018)
+ o Fixed bug; the argument type was not passed through
+ 
+
 Changes in Version 0.1-80.811
  o Released on CRAN (September 26, 2018)
  o This is mainly a small maintenance release to pass the cran checks 
