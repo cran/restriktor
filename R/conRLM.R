@@ -129,25 +129,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   }
   
-  # compute the reduced row-echelon form of the constraints matrix
-  rAmat <- GaussianElimination(t(Amat))
-  if (mix.weights == "pmvnorm") {
-    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
-    }
-  } else {
-    if (rAmat$rank < nrow(Amat) && 
-        !(se %in% c("none", "boot.model.based", "boot.standard")) && 
-        rAmat$rank != 0L) {
-      se <- "none"
-      warning(paste("Restriktor Warning: No standard errors could be computed.", 
-                    "\nThe constraint matrix must have full row-rank ( choose e.g. rows", 
-                    paste(rAmat$pivot, collapse = " "), ").",
-                    "\nTry se = \"boot.model.based\" or \"boot.standard\"."))  
-    }
-  }
-  
+
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
          "\n       match with the number of parameters.")

@@ -56,6 +56,15 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     stop("no restriktions were specified.") 
   }
   
+  if (!(nrow(Amat) == length(bvec))) {
+    warning("restriktor WARNING: The number of constraints does not match 
+                    the \'rhs\' (nrow(Amat) != length(rhs)).")
+  }
+  
+  if (meq > nrow(Amat)) { 
+    stop("restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
+  }
+  
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
     stop("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions")
   }
@@ -64,6 +73,33 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     print(as.data.frame(parTable, stringsAsFactors = FALSE))
     print(CON)
   }
+  
+  
+  ## remove any linear dependent rows from the constraint matrix
+  # remove any zero vectors
+  allZero.idx <- rowSums(abs(Amat)) == 0
+  Amat <- Amat[!allZero.idx, , drop = FALSE]
+  bvec <- bvec[!allZero.idx]
+  # rank Amat
+  rank <- qr(Amat)$rank
+  # singular value decomposition
+  s <- svd(Amat)
+  # continue untill Amat is of full-row rank
+  while (rank != length(s$d)) {
+    # check which singular values are zero
+    zero.idx <- which(zapsmall(s$d) <= 1e-16)
+    # remove linear dependent rows and reconstruct the constraint matrix
+    Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
+    # zapping small ones to zero
+    Amat <- zapsmall(Amat)
+    bvec <- bvec[-zero.idx]
+    s <- svd(Amat)
+    
+    if (debug) {
+      cat("rank = ", rank, " ... non-zero det. = ", length(s$d), "\n")
+    }
+  }
+
   
   OUT <- list(CON      = CON, 
               parTable = parTable,

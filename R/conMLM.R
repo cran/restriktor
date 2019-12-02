@@ -105,24 +105,6 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     meq  <- 0L
   }
   
-  # compute the reduced row-echelon form of the constraints matrix
-  rAmat <- GaussianElimination(t(Amat))
-  if (mix.weights == "pmvnorm") {
-    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
-    }
-  } 
-  else if (rAmat$rank < nrow(Amat) && 
-           !(se %in% c("none", "boot.model.based", "boot.standard")) && 
-           rAmat$rank != 0L) {
-    se <- "none"
-    warning(paste("Restriktor Warning: No standard errors could be computed. 
-                  The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), "), 
-                  Try se = \"boot.model.based\" or \"boot.standard\"."))  
-  }
-  
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   

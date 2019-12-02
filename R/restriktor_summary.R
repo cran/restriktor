@@ -1,10 +1,18 @@
+## to do
+# gebruik con_goric() functie om LL, Penalty and Goric te berekenen.
+
 summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc", 
-                               level = 0.95, GORIC = TRUE, ...) {
+                               level = 0.95, 
+                               goric = "goric", ...) {
   z <- object
   
   if (!inherits(z, "restriktor")) {
     stop("object of class ", sQuote(class(z)), " is not supported.")
   }
+  
+  goric <- tolower(goric)
+  stopifnot(goric %in% c("goric", "goricc", "gorica", "goricac", "none"))
+  
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
@@ -18,9 +26,9 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   }
   
   Amat <- z$constraints
-  meq <- z$neq
-  p <- z$model.org$rank
-  rdf <- z$df.residual
+  meq  <- z$neq
+  p    <- z$model.org$rank
+  rdf  <- z$df.residual
   b.restr <- z$b.restr
   r <- weighted.residuals(z)
   
@@ -30,8 +38,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   se.type <- z$se
   ans$se.type <- se.type
     attr(ans$se.type, "bootCIs") <- bootCIs    
-    attr(ans$se.type, "level") <- level    
-    attr(ans$se.type, "bty") <- bty
+    attr(ans$se.type, "level")   <- level    
+    attr(ans$se.type, "bty")     <- bty
 
   ans$residuals <- r
   if (is.null(z$bootout) && se.type != "none") {
@@ -163,35 +171,55 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
   wt.bar <- z$wt.bar
   ## compute goric
-  if (GORIC && !(attr(wt.bar, "method") == "none")) {
+  if (goric != "none" && !(attr(wt.bar, "method") == "none")) {
     ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
     ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
-    if (all(c(Amat) == 0)) {
-      # unconstrained case
-      PT <- 1 + length(b.restr)
-    } else if (attr(wt.bar, "method") == "boot") { 
-        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
-    } else if (attr(wt.bar, "method") == "pmvnorm") {
-        min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
-        max.C <- ncol(Amat) - meq # p - q2
-        PT <- 1 + sum(min.C : max.C * wt.bar) 
+    if (goric %in% c("goric", "gorica")) {
+      PT <- penalty_goric(Amat        = Amat, 
+                          meq         = meq, 
+                          LP          = wt.bar, 
+                          correction  = FALSE, 
+                          sample.nobs = NULL)
+      if (goric == "gorica") {
+        PT <- PT - 1 
+      }
+    } else if (goric %in% c("goricc", "goricac")) {
+      PT <- penalty_goric(Amat        = Amat, 
+                          meq         = meq, 
+                          LP          = wt.bar, 
+                          correction  = TRUE, 
+                          sample.nobs = length(r))
+      if (goric == "goricac") {
+        PT <- PT - 1 
+      }
     } else {
-        stop("restriktor ERROR: unable to compute penalty for GORIC.")  
+      stop("Restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
     }
     
+    # compute log-likelihood value
+    if (goric %in% c("goric", "goricc")) {
+      ll   <- z$loglik
+    } else if (goric %in% c("gorica", "goricac")) {
+      # unconstrained vcov
+      VCOV <- z$Sigma
+      ll <- dmvnorm(c(z$b.unrestr - z$b.restr), sigma = VCOV, log = TRUE)  
+    }
+    
+    
     if (inherits(z, c("conLM", "conMLM"))) {
-      ans$goric <- -2*(z$loglik - PT)
+      ans$goric <- -2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
         PT <- PT - 1
       }
-      ans$goric <- -2*z$loglik / 1 + 2*PT
+      ans$goric <- -2*ll / 1 + 2*PT
     }
+    attr(ans$goric, "type")    <- goric
     attr(ans$goric, "penalty") <- PT
-    attr(ans$goric, "loglik")  <- z$loglik 
+    attr(ans$goric, "loglik")  <- ll
   }
   
   if (inherits(z, "conRLM")) {
