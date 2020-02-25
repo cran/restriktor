@@ -55,7 +55,10 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   if (inherits(x, "conRLM")) {
     robWeights(x$wgt)
+    cat("\n")
   }
+  
+  cat(x$messages$mix_weights)
   
   invisible(x)
 }

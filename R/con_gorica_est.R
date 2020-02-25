@@ -8,11 +8,9 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   if (!(class(object)[1] == "numeric")) {
     stop("Restriktor ERROR: object must be of class numeric.")
   }
-  
   if (is.null(VCOV)) {
     stop("Restriktor ERROR: variance-covariance matrix VCOV must be provided.")
   }
-  
   # check method to compute chi-square-bar weights
   if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
     stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
@@ -82,36 +80,42 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     meq  <- 0L
   }
   
-  # # compute the reduced row-echelon form of the constraints matrix
-  # rAmat <- GaussianElimination(t(Amat))
-  # if (mix.weights == "pmvnorm") {
-  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-  #     stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank.", 
-  #                "\n  There might be redundant constraints (in that case, delete those or use mix.weights = \"boot\")."))
-  #   }
-  # } 
+  ## create list for warning messages
+  messages <- list()
   
-  
-  ## remove any linear dependent rows from the constraint matrix
-  # determine the rank of the constraint matrix/
-  if (!all(Amat == 0)) {
-    # remove any zero vectors
-    allZero.idx <- rowSums(abs(Amat)) == 0
-    Amat <- Amat[!allZero.idx, , drop = FALSE]
-    bvec <- bvec[!allZero.idx]
-    rank <- qr(Amat)$rank
-    s <- svd(Amat)
-    while (rank != length(s$d)) {
-      # check which singular values are zero
-      zero.idx <- which(zapsmall(s$d) <= 1e-16)
-      # remove linear dependent rows and reconstruct the constraint matrix
-      Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-      Amat <- zapsmall(Amat)
-      bvec <- bvec[-zero.idx]
-      s <- svd(Amat)
-      #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
+  ## check if constraint matrix is of full-row rank. 
+  rAmat <- GaussianElimination(t(Amat))
+  if (mix.weights == "pmvnorm") {
+    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+      messages$mix_weights <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+ For more information see ?restriktor.\n"
+      )
+      mix.weights <- "boot"
     }
-  }  
+  } 
+  
+  # ## remove any linear dependent rows from the constraint matrix
+  # # determine the rank of the constraint matrix/
+  # if (!all(Amat == 0)) {
+  #   # remove any zero vectors
+  #   allZero.idx <- rowSums(abs(Amat)) == 0
+  #   Amat <- Amat[!allZero.idx, , drop = FALSE]
+  #   bvec <- bvec[!allZero.idx]
+  #   rank <- qr(Amat)$rank
+  #   s <- svd(Amat)
+  #   while (rank != length(s$d)) {
+  #     # check which singular values are zero
+  #     zero.idx <- which(zapsmall(s$d) <= 1e-16)
+  #     # remove linear dependent rows and reconstruct the constraint matrix
+  #     Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
+  #     Amat <- zapsmall(Amat)
+  #     bvec <- bvec[-zero.idx]
+  #     s <- svd(Amat)
+  #     #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
+  #   }
+  # }  
   
   
   timing$constraints <- (proc.time()[3] - start.time)
@@ -126,42 +130,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     stop("nrow(Amat) != length(bvec)")
   }
   
-  # compute chi-square-bar weights
-  if (mix.weights != "none") {
-    if (nrow(Amat) == meq) {
-      # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - meq + 1
-      wt.bar[wt.bar.idx] <- 1
-    } else if (all(c(Amat) == 0)) { 
-      # unrestricted case
-      wt.bar <- c(rep(0L, p), 1)
-    } else if (mix.weights == "boot") { 
-      # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV     = Sigma,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = mix.bootstrap,
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
-    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
-      # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } 
-  } else {
-    wt.bar <- NA
-  }
-  attr(wt.bar, "method") <- mix.weights
-  
-  if (debug) {
-    print(list(mix.weights = wt.bar))
-  }
-  
-  timing$mix.weights <- (proc.time()[3] - start.time)
+
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
@@ -179,7 +148,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                wt.bar      = wt.bar,
+                wt.bar      = NULL,
                 iact        = 0L, 
                 control     = control)  
   } else {
@@ -211,15 +180,92 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                wt.bar      = wt.bar,
+                wt.bar      = NULL,
                 iact        = out.solver$iact, 
                 control     = control)
   }
   
   
+  ## determine level probabilities
+  if (mix.weights != "none") {
+    if (nrow(Amat) == meq) {
+      # equality constraints only
+      wt.bar <- rep(0L, ncol(Sigma) + 1)
+      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
+    } else if (all(c(Amat) == 0)) { 
+      # unrestricted case
+      wt.bar <- c(rep(0L, p), 1)
+    } else if (mix.weights == "boot") { 
+      # compute chi-square-bar weights based on Monte Carlo simulation
+      wt.bar <- con_weights_boot(VCOV     = Sigma,
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = mix.bootstrap,
+                                 parallel = parallel, 
+                                 ncpus    = ncpus, 
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
+    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
+      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } 
+  } else {
+    wt.bar <- NA
+  }
+  attr(wt.bar, "method") <- mix.weights
+  
+  OUT$wt.bar <- wt.bar
+  
+  if (debug) {
+    print(list(mix.weights = wt.bar))
+  }
+  
+  timing$mix.weights <- (proc.time()[3] - start.time)
+  OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   class(OUT) <- c("gorica_est")
   
   OUT
+}
+
+
+
+con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
+  ## create empty list
+  out <- list()
+  ## number of groups 
+  num_groups <- lavInspect(x, what = "ngroups")
+  ## get parameter table
+  unstandardized_parTable <- parTable(x)
+  standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)
+  unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
+  ## combine unstandardized and standardized parameter estimates  
+  parameter_table <- cbind(unstandardized_parTable, standardized_parTable)
+  ## Only user-specified labels
+  parameter_table <- parameter_table[parameter_table$label != "", ]
+  ## remove any duplicate labels
+  parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
+  ## use (un)standardized parameter estimates
+  out$estimate <- 
+    if (standardized) {
+      parameter_table$est.std
+    } else { 
+      parameter_table$est
+    }
+  names(out$estimate) <- parameter_table$label
+  ## extract (un)standardized VCOV
+  out$VCOV <- 
+    if (standardized) {
+      lavInspect(x, "vcov.std.all")
+    } else {
+      lavInspect(x, "vcov")
+    }
+  ## remove not used columns of VCOV
+  out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
+  
+  out
 }

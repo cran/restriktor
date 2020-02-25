@@ -4,10 +4,13 @@
 # using R: The Package ic.infer. 
 con_weights <- function(cov, meq) {
   if (meq == 0L) {
-    wt.bar <- ic.weights(cov)
+    wt.bar <- try(ic.weights(cov))
   } else if (meq > 0) {
-    wt.bar <- ic.weights(solve(solve(cov)[-c(1:meq), -c(1:meq)]))
+    wt.bar <- try(ic.weights(solve(solve(cov)[-c(1:meq), -c(1:meq)])))
   }
+  if (inherits(wt.bar, "try-error")) {
+    stop("Restriktor ERROR: the covariance matrix is too large. Try to set mix.weights = \"boot\".", call. = FALSE)
+  }  
   wt.bar
 }
 
@@ -16,10 +19,9 @@ con_weights <- function(cov, meq) {
 ## REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
 ## Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
 con_weights_boot <- function(VCOV, Amat, meq, 
-                             R = 9999, parallel = c("no", "multicore", "snow"),
+                             R = 99999L, parallel = c("no", "multicore", "snow"),
                              ncpus = 1L, cl = NULL, seed = NULL, 
                              verbose = FALSE, ...) {
-  
   
   parallel <- match.arg(parallel)
   have_mc <- have_snow <- FALSE
@@ -32,25 +34,23 @@ con_weights_boot <- function(VCOV, Amat, meq,
       ncpus <- 1L
   }
   
+  if (!is.null(seed))
+    set.seed(seed)
+  if (!exists(".Random.seed", envir = .GlobalEnv))
+    runif(1)
+  RNGstate <- .Random.seed
+  
+  
   bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
   invW <- solve(VCOV) 
   Dmat <- 2*invW
+  Z <- rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
+  dvec <- 2*(Z %*% invW)
   
-  iact <- vector("numeric", ncol(Amat))
+  
   fn <- function(b) {
-    if (verbose) {
-      cat("bootstrap draw =", b)
-    }
-    if (!is.null(seed))
-      set.seed(seed + b)
-    if (!exists(".Random.seed", envir = .GlobalEnv))
-      runif(1)
-    RNGstate <- .Random.seed
-    
-    Z <- rmvnorm(n = 1, mean = rep(0, ncol(VCOV)), sigma = VCOV)
-    dvec <- 2*(Z %*% invW)
     QP <- try(solve.QP(Dmat = Dmat, 
-                       dvec = dvec, 
+                       dvec = dvec[b, ], 
                        Amat = t(Amat),
                        bvec = bvec, 
                        meq  = meq))
@@ -87,8 +87,10 @@ con_weights_boot <- function(VCOV, Amat, meq,
       else parallel::parLapply(cl, seq_len(RR), fn)
     }
   }
-  else lapply(seq_len(RR), fn)
+  else lapply(seq_len(RR), fn) 
+  
   error.idx <- integer(0)
+  iact <- vector("numeric", ncol(Amat))
   for (b in seq_len(R)) {
     if (!is.null(res[[b]])) {
       iact[b] <- res[[b]]
@@ -99,10 +101,11 @@ con_weights_boot <- function(VCOV, Amat, meq,
   }
   # compute the number of positive components of VCOV.
   # ncol(VCOV) = maximum number of constraints
-  # iact    = number of active inequality constraints
-  dimL <- ncol(VCOV) - iact
-  wt.bar <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
+  # iact       = number of active inequality constraints
+  dimL   <- ncol(VCOV) - iact
+  wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
   
   wt.bar
 }
+
 

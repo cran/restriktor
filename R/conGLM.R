@@ -76,8 +76,6 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
-                                 mix.weights = mix.weights,
-                                 se          = se,
                                  debug       = debug)  
     # a list with useful information about the restriktions.}
     CON <- restr.OUT$CON
@@ -105,9 +103,31 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   }
   
-  timing$constraints <- (proc.time()[3] - start.time)
-  start.time <- proc.time()[3]
+  ## create list for warning messages
+  messages <- list()
   
+  ## check if constraint matrix is of full-row rank. 
+  rAmat <- GaussianElimination(t(Amat))
+  if (mix.weights == "pmvnorm") {
+    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+      messages$mix_weights <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+ For more information see ?restriktor.\n"
+      )
+      mix.weights <- "boot"
+    }
+  } else if (rAmat$rank < nrow(Amat) &&
+             !(se %in% c("none", "boot.model.based", "boot.standard")) &&
+             rAmat$rank != 0L) {
+    se <- "none"
+    warning(paste("\nRestriktor Warning: No standard errors could be computed.
+                    The constraint matrix must be full row-rank.
+                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+  }
+  
+  
+  ## some checks
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")
@@ -117,44 +137,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     stop("nrow(Amat) != length(bvec)")
   }
   
-  is.augmented <- TRUE
-  # compute chi-square-bar weights
-  if (mix.weights != "none") {
-    if (nrow(Amat) == meq) {
-      # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - meq + 1
-      wt.bar[wt.bar.idx] <- 1
-    } else if (all(c(Amat) == 0)) { 
-      # unrestricted case
-      wt.bar <- c(rep(0L, p), 1)
-      is.augmented <- FALSE
-    } else if (mix.weights == "boot") { 
-      # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV     = Sigma,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = mix.bootstrap,
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
-    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
-      # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } 
-  } else {
-    wt.bar <- NA
-  }
-  attr(wt.bar, "method") <- mix.weights
   
-  if (debug) {
-    print(list(mix.weigths = wt.bar))
-  }
-  
-  timing$mix.weights <- (proc.time()[3] - start.time)
+  timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
@@ -183,7 +167,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 constraints       = Amat, 
                 rhs               = bvec, 
                 neq               = meq, 
-                wt.bar            = wt.bar,
+                wt.bar            = NULL,
                 iact              = 0L, 
                 converged         = object$converged,
                 iter              = object$iter,
@@ -261,7 +245,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 constraints       = Amat, 
                 rhs               = bvec, 
                 neq               = meq, 
-                wt.bar            = wt.bar,
+                wt.bar            = NULL,
                 iact              = fit.glmc$iact,
                 converged         = fit.glmc$converged,
                 iter              = fit.glmc$iter,
@@ -279,15 +263,27 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   OUT$information <- t(X) %*% W %*% X / dispersion
   
   if (se != "none") {
+    is.augmented <- TRUE
+    if (all(c(Amat) == 0)) { 
+      # unrestricted case
+      is.augmented <- FALSE
+    } 
+    
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information.inv <- con_augmented_information(information  = OUT$information,
-                                                   is.augmented = is.augmented,
-                                                   X            = X, 
-                                                   b.unrestr    = b.unrestr, 
-                                                   b.restr      = b.restr,
-                                                   Amat         = Amat, 
-                                                   bvec         = bvec, 
-                                                   meq          = meq) 
+      information.inv <- try(con_augmented_information(information  = OUT$information,
+                                                       is.augmented = is.augmented,
+                                                       X            = X, 
+                                                       b.unrestr    = b.unrestr, 
+                                                       b.restr      = b.restr,
+                                                       Amat         = Amat, 
+                                                       bvec         = bvec, 
+                                                       meq          = meq), silent = TRUE)
+      
+      if (inherits(information.inv, "try-error")) {
+        stop(paste("Restriktor Warning: No standard errors could be computed.
+                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+      }
+      
       
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
@@ -334,6 +330,46 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     start.time <- proc.time()[3]
   }
   
+  start.time <- proc.time()[3]
+  
+  ## determine level probabilies
+  if (mix.weights != "none") {
+    if (nrow(Amat) == meq) {
+      # equality constraints only
+      wt.bar <- rep(0L, ncol(Sigma) + 1)
+      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
+    } else if (all(c(Amat) == 0)) { 
+      # unrestricted case
+      wt.bar <- c(rep(0L, p), 1)
+    } else if (mix.weights == "boot") { 
+      # compute chi-square-bar weights based on Monte Carlo simulation
+      wt.bar <- con_weights_boot(VCOV     = Sigma,
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = mix.bootstrap,
+                                 parallel = parallel, 
+                                 ncpus    = ncpus, 
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
+    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
+      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } 
+  } else {
+    wt.bar <- NA
+  }
+  attr(wt.bar, "method") <- mix.weights
+  OUT$wt.bar <- wt.bar
+  
+  if (debug) {
+    print(list(mix.weigths = wt.bar))
+  }
+  
+  timing$mix.weights <- (proc.time()[3] - start.time)
+  OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   class(OUT) <- c("restriktor", "conGLM")
