@@ -5,6 +5,7 @@ conTestWald     <- function(object, type = type, ...) UseMethod("conTestWald")
 conTest_summary <- function(object, ...) UseMethod("conTest_summary")
 conTest_ceq     <- function(object, ...) UseMethod("conTest_ceq")
 conTestC        <- function(object, ...) UseMethod("conTestC")
+#conTestD        <- function(object, type = type, ...) UseMethod("conTestD")
 
 
 conTest <- function(object, constraints = NULL, type = "summary", test = "F", 
@@ -87,7 +88,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
         }
         conTestC(object, ...)
       } else if (type == "summary" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
-        conTest_summary(object, ...)
+        conTest_summary(object, test = test, ...)
       } else {
         stop("type ", sQuote(type), " unknown.") 
       }
@@ -109,19 +110,26 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     CALL.restr <- c(list(object = object, constraints = constraints, rhs = rhs, 
                          neq = neq), ldots[m.restr > 0L])
     fit.restr <- do.call("restriktor", CALL.restr) 
-    
+
     m.test <- match(names(ldots), c("neq.alt", "boot", "R", "p.distr", "df", 
                                     "parallel", "ncpus", "cl", "seed", "control", 
                                     "verbose"), 0L)
     CALL.test <- c(list(object = fit.restr, test = test, type = type), 
                    ldots[m.test > 0L])
     do.call("conTest", CALL.test)
-  } else if (is.null(constraints)) {
-      if (class(object)[1] == "conTest") {
-        stop("Restriktor ERROR: object is already of class conTest.")
-      } 
-      else {
-        stop("Restriktor ERROR: ")
-      }
+  } 
+  # else if (inherits(object, "character") && !is.null(constraints)) {
+  #   
+  #   class(object) <- "conLavaan"
+  #   conTestD(object, type = type, ...) 
+  #   
+  # } 
+  else if (is.null(constraints)) {
+    if (class(object)[1] == "conTest") { 
+      stop("Restriktor ERROR: object is already of class conTest.")
+    } 
+    else {
+      stop("Restriktor ERROR: no constraints found.")
+    }
   }
 }  

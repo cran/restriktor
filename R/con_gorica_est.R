@@ -5,8 +5,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                            debug = FALSE, ...) {
   
   # check class
-  if (!(class(object)[1] == "numeric")) {
-    stop("Restriktor ERROR: object must be of class numeric.")
+  if (!(class(object)[1] %in% c("numeric", "CTmeta"))) { 
+    stop("Restriktor ERROR: object must be of class numeric or CTmeta.")
   }
   if (is.null(VCOV)) {
     stop("Restriktor ERROR: variance-covariance matrix VCOV must be provided.")
@@ -238,7 +238,7 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   ## create empty list
   out <- list()
   ## number of groups 
-  num_groups <- lavInspect(x, what = "ngroups")
+  #num_groups <- lavInspect(x, what = "ngroups")
   ## get parameter table
   unstandardized_parTable <- parTable(x)
   standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)

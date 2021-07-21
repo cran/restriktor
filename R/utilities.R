@@ -14,17 +14,26 @@ coef.restriktor <- function(object, ...)  {
     OUT <- c(b.restr, b.def)
   }
   
-  OUT
+  return(OUT)
+}
+
+
+coef.con_goric <- function(object, ...)  {
+  return(object$ormle$b.restr)
+}
+
+coef.gorica_est <- function(object, ...)  {
+  return(object$b.restr)
 }
 
 
 logLik.restriktor <- function(object, ...) {
-  object$loglik
+  return(object$loglik)
 }
 
 
 model.matrix.restriktor <- function(object, ...) {
-  model.matrix(object$model.org)
+  return(model.matrix(object$model.org))
 }
 
 
@@ -43,7 +52,7 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
   } else {
     stop("deriv must be in {0,1,2}")
   }
-  r
+  return(r)
 }
 
 

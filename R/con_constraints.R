@@ -4,21 +4,24 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   ## build a bare-bones parameter table for this model
   # if model is a numeric vecter
   if ("numeric" %in% class(model)) {
-    parTable <- con_partable_est(model, est = FALSE, label = TRUE)
+    parTable <- con_partable_est(model, est = TRUE, label = TRUE)
+    parTable_org <- parTable
   } else {
     # if model is a fitted unrestricted object
-    parTable <- con_partable(model, est = FALSE, label = TRUE)  
+    parTable <- con_partable(model, est = TRUE, label = TRUE)  
+    parTable_org <- parTable
   }
   
   # unlist constraints
   constraints <- unlist(constraints)
   
   if (is.character(constraints)) {
-    # parse the constraints
+    # parse the constraints 
     CON <- lav_constraints_parse(constraints = constraints,
                                  partable    = parTable,
-                                 debug       = debug)
-    
+                                 debug       = debug,
+                                 theta       = parTable$est)
+     
     FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()
@@ -45,6 +48,29 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       stop("Restriktor ERROR: constraints are not correctly specified. 
                     See ?restriktor for details.")
     }
+    
+    # In case of abs() the contraints may incorretly be considered as non-linear. 
+    # Here, we remove the abs() from the constraint function which is redundant 
+    # for determining if the constraints are linear. 
+    
+    # check if any abs() functie exists in string. 
+    if (any(grepl("abs\\(.*\\)", c(LIST$lhs, LIST$rhs)))) {
+      LIST2 <- LIST
+      
+      # reomve abs( and ) from string
+      LIST2$lhs <- gsub("abs\\(|\\)", "", LIST2$lhs)
+      LIST2$rhs <- gsub("abs\\(|\\)", "", LIST2$rhs)
+      
+      parTable_org$free <- seq_len(length(parTable_org$lhs))
+      cin.function <- lav_partable_constraints_ciq(partable = parTable_org, con = LIST2)
+      ceq.function <- lav_partable_constraints_ceq(partable = parTable_org, con = LIST2)
+      
+      CON$cin.nonlinear.idx <- con_constraints_nonlinear_idx(func = cin.function, 
+                                                             npar = length(parTable_org$est))
+      CON$ceq.nonlinear.idx <- con_constraints_nonlinear_idx(func = ceq.function, 
+                                                             npar = length(parTable_org$est))
+    }
+    
     
     CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {
@@ -154,7 +180,8 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable    = lavpartable)
+                               partable    = lavpartable,
+                               theta       = lavpartable$est)
 
   CON$ceq.JAC
 }
@@ -174,7 +201,8 @@ con_constraints_con_amat <- function(object, constraints = NULL) {
 
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable = lavpartable)
+                               partable    = lavpartable, 
+                               theta       = lavpartable$est)
 
   rbind(CON$ceq.JAC, CON$cin.JAC)
 }
@@ -197,7 +225,8 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
   
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable    = lavpartable)
+                               partable    = lavpartable,
+                               theta       = lavpartable$est)
 
   c(CON$ceq.rhs, CON$cin.rhs)
 }
