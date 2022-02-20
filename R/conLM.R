@@ -337,7 +337,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     if (nrow(Amat) == meq) {
       # equality constraints only
       wt.bar <- rep(0L, ncol(Sigma) + 1) 
-      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar.idx <- ncol(Sigma) - qr(Amat)$rank + 1 
       wt.bar[wt.bar.idx] <- 1
     } else if (all(c(Amat) == 0)) { 
       # unrestricted case
@@ -353,7 +353,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  cl       = cl,
                                  seed     = seed,
                                  verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap
     } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))

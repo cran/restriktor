@@ -8,6 +8,9 @@ goric.default <- function(object, ...,
                           VCOV = NULL, sample.nobs = NULL,
                           type = "goric", bound = NULL, debug = FALSE) {
 
+  # bounds are ignored (for now)
+  bound <- NULL
+  
   mc <- match.call()
   CALL <- as.list(mc[-1])
   
@@ -282,18 +285,13 @@ goric.default <- function(object, ...,
       bound <- NULL
     } 
     
-    # for now
-    #bound <- NULL
-    
-
 # about equality bounds ---------------------------------------------------
     if (!is.null(bound)) {
 
       betasc <- NA
       
-      # check if any equality constraints
-      if (nrow(Amat.ceq) != length(bound)) {
-        stop("Restriktor ERROR: the number of bounds must be equal to the number of equality restrictions.")
+      if (bound <= 0L) {
+        stop("Restriktor ERROR: the bounds must be positive!")
       }
       
       # upper-bound = rhs + bound
@@ -301,168 +299,66 @@ goric.default <- function(object, ...,
       # lower-bound = rhs - bound
       lb <- bvec.ceq - bound
       
-      # correct user error
-      if ( length(ub) == 1L || length(lb) == 1L && meq >= 1L ) {
-        ub <- rep(ub, meq)
-        lb <- rep(lb, meq)
-      }
-      
       nr.meq <- 1:meq
       
       ## If no constraints are violated, then the complement is on the boundary
       ## of the bounds.
       
-      # check if unconstrained mle are violated
-      if (nrow(Amat.ciq) > 0) {
-        check.ciq <- all(Amat.ciq %*% b.unrestr - bvec.ciq >= 0)
-      } else {
-        check.ciq <- TRUE
-      }
-      # check if unconstrained mle lay between the bounds
-      check.ub <- all(Amat.ceq %*% b.unrestr - bvec[1:meq] - ub <= 0)
-      check.lb <- all(Amat.ceq %*% b.unrestr - bvec[1:meq] - lb >= 0)
-     
-      # check if unrestricted mle lay in boundary area
-      if (check.ciq & check.ub & check.lb) {
-      # log-likelihood model
-        if (type == "goric") {
+      Amatx <- rbind(Amat.ceq, -Amat.ceq, Amat.ciq)                  
+      bvecx <- c(lb, -ub, bvec.ciq)                                  
+      
+      # constraints are in agreement with the unconstrained estimates
+      if (all(Amatx %*% b.unrestr - bvecx >= 0)) {
+        if (type == "goric") { 
           llm <- logLik(ans$model.org)
         } else if (type == "gorica") {
-          llm <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
+          llm <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE) 
         }
-
-        ## determine log-likelihood complement
-        # upper-bound                                                           # enkel voor unconstrained mle die niet tussen de bounds liggen?
-        llc.ub <- list()
-        for (l in nr.meq) {
-          Amat.ub <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
-          bvec.ub <- c(ub[l], bvec.ciq)
-          Hc.ub <- restriktor(ans$model.org, constraints = Amat.ub,
-                              neq = 1, rhs = bvec.ub,
+        # check all bounds
+        
+        llc <- list()
+        for (i in 1:meq) {
+         bvecx2 <- bvecx
+         
+         ## this is the same as specifying a range restriction, e.g., x1 < 0.05; x1 > -0.05
+         bvecx2[i] <- ub[i]
+         Hc.ub <- restriktor(ans$model.org, constraints = Amatx,
+                             neq = i, rhs = bvecx2,
+                             mix.weights = "none", se = "none")
+         
+         bvecx2[i] <- lb[i]
+         Hc.lb <- restriktor(ans$model.org, constraints = Amatx,
+                             neq = i, rhs = bvecx2,
+                             mix.weights = "none", se = "none")
+         
+         bvecx2[i + meq] <- ub[i]
+         Hc.ub2 <- restriktor(ans$model.org, constraints = Amatx,
+                              neq = i, rhs = bvecx2,
                               mix.weights = "none", se = "none")
-          if (type == "goric") {  
-           llc.ub[[l]] <- logLik(Hc.ub)
-          } else if (type == "gorica") {
-           llc.ub[[l]] <- dmvnorm(c(b.unrestr - Hc.ub$b.restr), 
-                                  sigma = VCOV, log = TRUE)
-          }
-        }
-       # lower-bound                                                            # enkel voor unconstrained mle die niet tussen de bounds liggen?
-        llc.lb <- list()
-        for (l in nr.meq) {
-          Amat.lb <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
-          bvec.lb <- c(lb[l], bvec.ciq)
-          Hc.lb <- restriktor(ans$model.org, constraints = Amat.lb,
-                              neq = 1, rhs = bvec.lb,
+         
+         bvecx2[i + meq] <- lb[i]
+         Hc.lb2 <- restriktor(ans$model.org, constraints = Amatx,
+                              neq = i, rhs = bvecx2,
                               mix.weights = "none", se = "none")
-          if (type == "goric") {
-            llc.lb[[l]] <- logLik(Hc.lb)
-          } else if (type == "gorica") {
-            llc.lb[[l]] <- dmvnorm(c(b.unrestr - Hc.lb$b.restr),
-                                   sigma = VCOV, log = TRUE)
-          }
+         
+         
+         llc[[i]] <- c(logLik(Hc.ub), logLik(Hc.lb), logLik(Hc.ub2), logLik(Hc.lb2))
+         
+         # hoe doet Muthen het met about equality
+         # hoe zit het nu met de true hypothesis rate
         }
        
-       # if any inequalty constraints, then all equalities are released and the
-       # inequality constraints are treated as equalities, separately.
-        if (nrow(Amat.ciq) > 0L) {
-          llc.s <- list()
-          nr.ciq <- 1:nrow(Amat.ciq)
-          for (l in nr.ciq) {
-            Hc.s <- restriktor(ans$model.org,
-                               constraints = Amat.ciq[l, , drop = FALSE],
-                               neq = 1, rhs = bvec.ciq[l],
-                               mix.weights = "none", se = "none")
-            b.s <- coef(Hc.s)
-            b.s[abs(b.s) < sqrt(.Machine$double.eps)] <- 0L
-            
-            Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)                       # correct?
-            bvecx <- c(bvec.ciq, lb, lb)                                        # correct?
-            if (all(Amatx %*% b.s - bvecx >= 0)) {                              # correct check?
-              # log-likelihood model
-              if (type == "goric") {
-                llc.s[[l]] <- logLik(Hc.s)
-              } else if (type == "gorica") {
-                llc.s[[l]] <- dmvnorm(c(b.unrestr - Hc.s$b.restr),
-                                      sigma = VCOV, log = TRUE)
-              }
-            }
-          }
-        } else {
-          llc.s <- NULL
-        }
-        llc <- unlist(c(llc.ub, llc.lb, llc.s))
-        llc <- max(llc)
-
-        if (debug) {
-          cat(llc)
-        }
+        llc <- max(unlist(llc))
       } else {
-        # determine the log-likelihood_m in case the unconstrained mle
-        # lay outside the range restrictions.
-        # 2^q2 combinations.
-        if (type == "goric") {
+        ## If one constraint is violated, then the complement is equal to the 
+        ## unconstrained model
+        if (type == "goric") { 
           llc <- logLik(ans$model.org)
         } else if (type == "gorica") {
-          llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
-        }
-       
-        # if all bounds are zero, then llm = logLik(object)
-        if (!all(bound == 0L)) {
-        
-        
-        # upper-bound                                                           # enkel voor unconstrained mle die niet tussen de bounds liggen?
-        llm.ub <- list()
-        for (l in nr.meq) {
-          Amat.ub <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
-          bvec.ub <- c(ub[l], bvec.ciq)
-          Hm.ub <- restriktor(ans$model.org, constraints = Amat.ub,
-                              neq = 1, rhs = bvec.ub,
-                              mix.weights = "none", se = "none")
-          if (type == "goric") {  
-            llm.ub[[l]] <- logLik(Hm.ub)
-          } else if (type == "gorica") {
-            llm.ub[[l]] <- dmvnorm(c(b.unrestr - Hm.ub$b.restr), 
-                                   sigma = VCOV, log = TRUE)
-          }
-        }
-        # lower-bound                                                            # enkel voor unconstrained mle die niet tussen de bounds liggen?
-        llm.lb <- list()
-        for (l in nr.meq) {
-          Amat.lb <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
-          bvec.lb <- c(lb[l], bvec.ciq)
-          Hm.lb <- restriktor(ans$model.org, constraints = Amat.lb,
-                              neq = 1, rhs = bvec.lb,
-                              mix.weights = "none", se = "none")
-          if (type == "goric") {
-            llm.lb[[l]] <- logLik(Hm.lb)
-          } else if (type == "gorica") {
-            llm.lb[[l]] <- dmvnorm(c(b.unrestr - Hm.lb$b.restr),
-                                   sigma = VCOV, log = TRUE)
-          }
-        }
-        
-        #### 
-        # wat doen we met de inqualities ??
-        ####
-        
-        llm.s <- NULL
-        llm <- unlist(c(llm.ub, llm.lb, llm.s))
-        if (debug) {
-          cat("log-likelihood_m =", llm, "\n")
-        }
- 
-        llm <- max(llm)
-        } else {
-         if (type == "goric") {
-           llm <- logLik(conList[[1]])
-         } else if (type == "gorica") {
-           llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
-         }
-        }
-        llm
-      
+          llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE) 
+        } 
       }
+
 #################################### no bounds ################################    
     } else if (is.null(bound)) {
       # check if any equality constraint is violated
@@ -573,7 +469,7 @@ goric.default <- function(object, ...,
       } else if (attr(wt.bar, "method") == "pmvnorm") {
         # here, the q2 equalities are not included in wt.bar. Hence, they do not 
         # have to be subtracted.
-        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) - length(bound)            # Dit moet nog voor de overige PTc gefixed worden!                             
+        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) #- length(bound)            # Dit moet nog voor de overige PTc gefixed worden!                             
       } else {
         stop("restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
@@ -588,8 +484,8 @@ goric.default <- function(object, ...,
        PTc <- 1 + wt.bar[idx-meq] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
          (1 - wt.bar[idx-meq]) * (N * p + p + 2) / (N - p - 2)
      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
-          (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
+       PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
+         (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
      }
     }
     if (debug) {
@@ -705,14 +601,14 @@ goric.default <- function(object, ...,
 
   ans$objectList  <- conList
   ans$objectNames <- objectnames
-  # compute goric weights and relative weights
+  # compute goric weights and ratio weights
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
     names(df)[5] <- paste0(type, ".weights")
   ans$result <- df
 
-  # compute relative weights
+  # compute ratio weights
   modelnames <- as.character(df$model)
   if (length(modelnames) > 1) {
     rw <- goric.weights %*% t(1/goric.weights)
@@ -720,7 +616,7 @@ goric.default <- function(object, ...,
     diag(rw) <- 1
     rownames(rw) <- modelnames
     colnames(rw) <- paste0("vs. ", modelnames)
-    ans$relative.gw <- rw
+    ans$ratio.gw <- rw
   }
   
   # if (comparison == "complement" && is.null(bound)) {
@@ -844,6 +740,7 @@ goric.lm <- function(object, ...,
   
   res
 }
+
 
 
 goric.restriktor <- function(object, ...,
@@ -981,13 +878,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
 
   if (type == "goric") {
-    cat("generalized order-restriced information criterion: \n")
+    cat("generalized order-restricted information criterion: \n")
   } else if (type == "gorica") {
-    cat("generalized order-restriced information criterion approximation:\n")
+    cat("generalized order-restricted information criterion approximation:\n")
   } else if (type == "goricc") {
-    cat("small sample generalized order-restriced information criterion:\n")
+    cat("small sample generalized order-restricted information criterion:\n")
   } else if (type == "goricac") {
-    cat("small sample generalized order-restriced information criterion approximation:\n")
+    cat("small sample generalized order-restricted information criterion approximation:\n")
   }
   
   cat("\nResults:\n")
@@ -996,9 +893,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat("---")
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
-    relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
+    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     cat("\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
+        sprintf("%s", ratio.gw[1,2]),"times more support than its complement.\n")
   } 
   
   cat("\n")
@@ -1031,13 +928,13 @@ summary.con_goric <- function(object, brief = TRUE,
   iact <- lapply(x$objectList, FUN = function(x) { x$iact } )
 
   if (type == "goric") {
-    cat("\nrestriktor: generalized order-restriced information criterion: \n")
+    cat("\nrestriktor: generalized order-restricted information criterion: \n")
   } else if (type == "gorica") {
-    cat("\nrestriktor: generalized order-restriced information criterion approximation:\n")
+    cat("\nrestriktor: generalized order-restricted information criterion approximation:\n")
   } else if (type == "goricc") {
-    cat("\nrestriktor: small sample generalized order-restriced information criterion:\n")
+    cat("\nrestriktor: small sample generalized order-restricted information criterion:\n")
   } else if (type == "goricac") {
-    cat("\nrestriktor: small sample generalized order-restriced information criterion approximation:\n")
+    cat("\nrestriktor: small sample generalized order-restricted information criterion approximation:\n")
   }
   
   cat("\nResults:\n")  
@@ -1046,37 +943,37 @@ summary.con_goric <- function(object, brief = TRUE,
         print.gap = 2, quote = FALSE)
   cat("---\n")
   
-  if (!is.null(x$relative.gw)) {
+  if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
-      cat("\nRelative GORIC-weights:\n")
+      cat("\nRatio GORIC-weights:\n")
     } else if (type == "gorica") {
-      cat("\nRelative GORICA-weights:\n")
+      cat("\nRatio GORICA-weights:\n")
     } else if (type == "goricc") {
-      cat("\nRelative GORICC-weights:\n")
+      cat("\nRatio GORICC-weights:\n")
     } else if (type == "goricac") {
-      cat("\nRelative GORICAC-weights:\n")
+      cat("\nRatio GORICAC-weights:\n")
     }
     
-    relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
+    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     
-    rownames(relative.gw) <- rownames(x$relative.gw)
-    if (max(as.numeric(relative.gw)) >= 1e4) {
-      print(format(x$relative.gw, digits = digits, scientific = TRUE), 
+    rownames(ratio.gw) <- rownames(x$ratio.gw)
+    if (max(as.numeric(ratio.gw)) >= 1e4) {
+      print(format(x$ratio.gw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE)
     } else {
-      print(format(trimws(relative.gw), digits = digits, scientific = FALSE), 
+      print(format(trimws(ratio.gw), digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
     if (length(unique(df$loglik)) != length(df$loglik)) {
       cat("Note: In case of equal log-likelihood (loglik) values, the 
-      relative weights are solely based on the difference in penalty values.\n")
+      ratio weights are solely based on the difference in penalty values.\n")
     }
   }
   
   if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
+        sprintf("%s", ratio.gw[1,2]), "times more support than its complement.\n")
   } 
   
   if (!brief) {

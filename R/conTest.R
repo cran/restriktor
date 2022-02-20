@@ -110,7 +110,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     CALL.restr <- c(list(object = object, constraints = constraints, rhs = rhs, 
                          neq = neq), ldots[m.restr > 0L])
     fit.restr <- do.call("restriktor", CALL.restr) 
-
+    
     m.test <- match(names(ldots), c("neq.alt", "boot", "R", "p.distr", "df", 
                                     "parallel", "ncpus", "cl", "seed", "control", 
                                     "verbose"), 0L)

@@ -1,3 +1,4 @@
+
 plot.conTestLavaan <- function(x, ...,
                                type       = c("test", "ppv"),
                                main       = "main",
