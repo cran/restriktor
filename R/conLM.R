@@ -140,6 +140,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
+  # compute residual degreees of freedom, corrected for equality constraints.
+  df.residual <- n - (p - qr(Amat[0:meq,])$rank)
+  
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b.restr  <- b.unrestr
@@ -217,8 +220,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       }
       R2.reduced <- mss / (mss + rss)
       
-      # compute residual degreees of freedom, corrected for equality constraints.
-      df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
         s2 <- sum(residuals^2) / df.residual  
@@ -290,7 +291,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       }
     } else if (se == "boot.model.based") {
       if (attr(object$terms, "intercept") && any(Amat[, 1] == 1)) {
-          stop("Restriktor ERROR: no restriktions on intercept possible",
+          stop("Restriktor ERROR: no restrictions on intercept possible",
                "\n       for 'se = boot.model.based' bootstrap method.", call. = FALSE)
       }
       
