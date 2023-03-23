@@ -2,7 +2,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                             debug = FALSE, ...) {
   
   ## build a bare-bones parameter table for this model
-  # if model is a numeric vecter
+  # if model is a numeric vector
   if ("numeric" %in% class(model)) {
     parTable <- con_partable_est(model, est = TRUE, label = TRUE)
     parTable_org <- parTable
@@ -34,8 +34,17 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       # some constraint cleanup
       constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
+      #constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
+      constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
+      # the regular expression "[\\(\\)]" is a pattern that matches either an opening 
+      # parenthesis ( or a closing parenthesis ).
+      if(length(gregexpr("[\\(\\)]", constraints)[[1]]) %% 2 == 0) {
+        constraint.syntax <- gsub("\\),", "\\)\n", constraint.syntax, perl = TRUE)
+      } else {
+        constraint.syntax <- gsub(",", "\n", constraint.syntax, perl = TRUE)
+      }
       
       constraint.syntax[[i]] <- strsplit(constraint.syntax[[i]], split = "\n", perl = TRUE)
       constraint.syntax[[i]] <- unlist(constraint.syntax[[i]])
@@ -44,13 +53,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax[[i]] <- gsub(">=",">", constraint.syntax[[i]], perl = TRUE)
       constraint.syntax <- unlist(constraint.syntax[i])
       
-      LIST <- list()
+      # LIST <- list()
       # this is where the constraints are transformed back to pairwise constraints
       # x1 < x2 < x3 becomes x1 < x2; x2 < x3. This is needed for computing the
       # constraint matrix. 
-      for (k in 1:length(constraint.syntax)) {
-        LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
-      }
+      # for (k in 1:length(constraint.syntax)) {
+      #   LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
+      # }
+      
+      LIST <- lapply(constraint.syntax, function(x) { sapply(x, expand_parentheses) })
+      LIST <- lapply(LIST, function(x) { sapply(x, expand_compound_constraints) })
       
       unLIST <- unlist(LIST)
       def.idx  <- grepl(":=", unLIST)
@@ -66,7 +78,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                                  partable    = parTable,
                                  debug       = debug,
                                  theta       = parTable$est)
-     
+    CON$constraints <- constraints
     FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()
@@ -94,11 +106,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
     
     if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
-      stop("Restriktor ERROR: Sorry, but I have no idea how to deal with your constraint syntax. \n",
+      stop("Restriktor ERROR: I have no idea how to deal with this constraint syntax. \n",
            "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 
-            "https://restriktor.org/tutorial/syntax.html. \n\n",  
-           "Hint: constraints have to be specified pairwise, e.g., x1 < x2; x2 == x3; x1 > 2", sep = "",
-          call. = FALSE
+            "https://restriktor.org/tutorial/syntax.html. \n", sep = "", call. = FALSE
       )
     }
     

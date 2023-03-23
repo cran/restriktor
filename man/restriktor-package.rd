@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.3-500\cr
-  Date: \tab 2022-06-03\cr
+  Version: \tab 0.4-500\cr
+  Date: \tab 2023-03-22\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
@@ -136,17 +136,19 @@ summary(fit.con)
     \bold{87}, 156--161.
 
     Silvapulle, M. (1996). Robust bounded influence tests against one-sided 
-    hypotheses in general parametric models. \emph{Statistics & probability 
+    hypotheses in general parametric models. \emph{Statistics and probability 
     letters}, \bold{31}, 45--50.
     
     Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained Statistical Inference}. 
     Wiley, New York
-    
-    Vanbrabant, L. and Kuiper, R. (n.d.). Giving the complement a compliment: Evaluating 
-    a theory-based hypothesis against its complement using the GORIC. 
+
+    Vanbrabant, L., Van Loey, N., and Kuiper, R.M. (2020). Evaluating a theory-based 
+    hypothesis against its complement using an AIC-type information criterion with 
+    an application to facial burn injury. \emph{Psychological methods}, \bold{25(2)},
+    129-142. https://doi.org/10.1037/met0000238.
 }
 
-\author{ Leonard Vanbrabant and Yves Rosseel - Ghent University}
+\author{Leonard Vanbrabant and Yves Rosseel - Ghent University}
 \seealso{ 
 See also \code{\link{restriktor}}, \code{\link{iht}}, 
           packages \pkg{boot}, \pkg{goric}, \pkg{ic.infer}, 
