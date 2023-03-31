@@ -1,4 +1,4 @@
-94c965ae82846dc7263ee985955e3030 *DESCRIPTION
+f96403aa9574c6a04da13e7e1fd88f54 *DESCRIPTION
 23906acd9b8ab6e65c2107b7a1e9f925 *NAMESPACE
 a5b57d35974cfe5f39b8daef91a9b738 *R/Gaussian_Elimination.R
 a7714dde88832a5a7f2130a3c1d9d02d *R/conGLM.R
@@ -25,9 +25,9 @@ cf7545721e17d0ad20bde6fc92901db0 *R/con_augmented_information.R
 3b747e90ce87e4176f92cac00100707e *R/con_boot_data.R
 5b224b5fae79b2f9161788c132dec563 *R/con_boot_fixed.R
 80f213e3b4666111e5114d664cd741d2 *R/con_bootstrapD.R
-9acac53a7ef430d2cf0f5ce4c2dfe1ee *R/con_constraints.R
+2b6ac36b204bd2fae3697d4e00c6ce52 *R/con_constraints.R
 b42f7282953bcec7b12744a9e3281d0e *R/con_constraints_nonlinear_idx.R
-5afe62600b90bac591be5971110966d1 *R/con_goric.R
+c1448337cabdba56cd1e0a93ec748816 *R/con_goric.R
 2e3b0b6855c71804bc5e8851e9a240e3 *R/con_goric_penalty.R
 a8a536752b41cc7ccd31815c474f2806 *R/con_gorica_est.R
 f52c1f615b71bf18796b8c951ed3c7f7 *R/con_gorica_est_summary.R
@@ -73,6 +73,6 @@ bfda55e854d6d29e776a5bcbdf4075c8 *man/evSyn.Rd
 26c721d7d4f5f1bb9ce76b7af3503ad2 *man/goric.Rd
 365a5a0c42b27a4bc22fa0c310613c2e *man/iht.Rd
 bf3fdf8dea658ebb21c4583cff2e6464 *man/mixingWeights.Rd
-a513bbb1b59a58ceb1a2dce94b2a6fba *man/restriktor-package.rd
+29a5ffa06cdf70c14d6598e9fa57aa83 *man/restriktor-package.rd
 5ae5e73b2f22bdcd96531e5d5efe251f *man/restriktor.Rd
 42d14130cf3d8b90c9a7b9d86504f136 *man/restriktor_methods.Rd
