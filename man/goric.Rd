@@ -18,34 +18,34 @@ comparable to the Akaike weights.
 
 \usage{goric(object, ...)
 
-\method{goric}{default}(object, ..., constraints = NULL,
+\method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", 
       auto.bound = FALSE, debug = FALSE)
 
-\method{goric}{restriktor}(object, ..., constraints = NULL,
+\method{goric}{restriktor}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric", 
       auto.bound = NULL, debug = FALSE)
 
-\method{goric}{lm}(object, ..., constraints = NULL,
+\method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric",
       missing = "none", auxiliary = c(), emControl = list(),
       auto.bound = NULL, debug = FALSE)
 
-\method{goric}{numeric}(object, ..., constraints = NULL,
+\method{goric}{numeric}(object, ..., hypotheses = NULL,
       VCOV = NULL, comparison = "unconstrained",
       type = "gorica", sample.nobs = NULL,
       auto.bound = NULL, debug = FALSE)
 
-\method{goric}{lavaan}(object, ..., constraints = NULL,
+\method{goric}{lavaan}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "gorica",
       standardized = FALSE, auto.bound = NULL, debug = FALSE)
 
-\method{goric}{CTmeta}(object, ..., constraints = NULL,
+\method{goric}{CTmeta}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "gorica", 
       sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
 
-\method{goric}{rma}(object, ..., constraints = NULL,
+\method{goric}{rma}(object, ..., hypotheses = NULL,
       VCOV = NULL, comparison = "unconstrained", type = "gorica", 
       sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
 
@@ -65,7 +65,7 @@ comparable to the Akaike weights.
     \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
     \item a numeric vector containing the unconstrained estimates resulting from any 
     statistical analysis.
-    \item a fitted object of class \code{lavaan}.
+    \item a fitted object of class \code{lavaan}. See examples on how to specify the hypotheses.
     \item a fitted object of class \code{CTmeta}.
     \item a fitted object of class \code{rma}.
   }
@@ -79,14 +79,18 @@ comparable to the Akaike weights.
   standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
   See details for more information.}
   
-  \item{constraints}{list; there are two ways to constrain parameters. 
-  First, the constraint syntax consists of one or more text-based
+  \item{hypotheses}{list; Please note that the hypotheses argument in the given 
+  context serves the same purpose as the constraints argument utilized in the 
+  restriktor function. The distinction between them is solely semantic.
+  
+  There are two ways to constrain parameters. 
+  First, the hypothesis syntax consists of one or more text-based
   descriptions, where the syntax can be specified as a literal 
   string enclosed by single quotes. Only the names of \code{coef(model)} or
   \code{names(vector)} can be used as names. See details for more information. 
   Note that objects of class "mlm" do not (yet) support this method. 
   
-  Second, the constraint syntax consists of a matrix \eqn{R} (or a vector in 
+  Second, the hypothesis syntax consists of a matrix \eqn{R} (or a vector in 
   case of one constraint) and defines the left-hand side of the constraint 
   \eqn{R\theta \ge rhs}, where each row represents one constraint. The number of 
   columns needs to correspond to the number of parameters estimated (\eqn{\theta}) 
@@ -140,54 +144,75 @@ comparable to the Akaike weights.
 }
 
 \details{The GORIC(A) values themselves are not interpretable and 
-the interest lie in their differences. The GORIC(A) weights reflect 
-the support of each hypothesis in the set. To compare two hypotheses 
-(and not one to the whole set), one can examine the ratio of the 
-two corresponding GORIC(A) weights. To avoid selecting a weakly supported 
-hypothesis as the best one, the unconstrained hypothesis is usually 
-included as safeguard.
+  the interest lie in their differences. The GORIC(A) weights reflect 
+  the support of each hypothesis in the set. To compare two hypotheses 
+  (and not one to the whole set), one can examine the ratio of the 
+  two corresponding GORIC(A) weights. To avoid selecting a weakly supported 
+  hypothesis as the best one, the unconstrained hypothesis is usually 
+  included as safeguard.
+  
+  In case of one order-constrained hypothesis, say H1, the complement 
+  Hc can be computed as competing hypothesis. The complement is defined 
+  as Hc = not H1.
+  
+  If the object(s) is of class restriktor the hypotheses (constraints) are 
+  inherited. Otherwise, the hypothesis syntax can be parsed via the hypotheses argument. 
+  If the object is an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, 
+  then the hypotheses can be specified in two ways, see \code{\link{restriktor}}. Note 
+  that if the hypotheses are written in matrix notation, then the hypotheses
+  for each model/hypothesis is put in a named list with specific names constraints, rhs, 
+  and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
+  list(model1 = list(constraints = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
+  and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
+  then the object might be a (named) numeric vector. The hypotheses can again be 
+  specified in two ways, see \code{\link{restriktor}}. For examples, see below.
+  
+  To determine the penalty term values, the chi-bar-square weights (a.k.a. level
+  probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
+  the chi-bar-square weights are computed based on the multivariate normal distribution 
+  function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
+  chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
+  
+  The "two.stage" approach for missing data uses the EM algorithm from the 
+  \code{norm2} package. The response variables are assumed to be jointly 
+  normal. In practice, missing-data procedures designed for variables that are 
+  normal are sometimes applied to variables that are not. Binary and ordinal 
+  variables are sometimes imputed under a normal model, and the imputed values 
+  may be classified or rounded. This is also how restriktor handles (ordered)
+  factors for now. 
+  
+  A better strategy (not implemented yet) would be to convert (ordered) factors 
+  into a pair of dummy variables. If the (ordered) factors have missing values, 
+  the dummy variables could be included as columns of Y and imputed, but then you 
+  have to decide how to convert the continuously distributed imputed values for 
+  these dummy codes back into categories. 
+  
 
-In case of one order-constrained hypothesis, say H1, the complement 
-Hc can be computed as competing hypothesis. The complement is defined 
-as Hc = not H1.
-
-If the object(s) is of class restriktor the constraints are inherited. Otherwise, 
-the constraint syntax can be parsed via the constraint argument. If the object is 
-an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, then the 
-constraints can be specified in two ways, see \code{\link{restriktor}}. Note 
-that if the constraints are written in matrix notation, then the constraints
-for each model/hypothesis is put in a named list with specific names amat, rhs, 
-and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
-list(model1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
-and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
-then the object might be a (named) numeric vector. The constraints can again be 
-specified in two ways, see \code{\link{restriktor}}. For examples, see below.
-
-To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
-the chi-bar-square weights are computed based on the multivariate normal distribution 
-function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
-chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
-
-The "two.stage" approach for missing data uses the EM algorithm from the 
-\code{norm2} package. The response variables are assumed to be jointly 
-normal. In practice, missing-data procedures designed for variables that are 
-normal are sometimes applied to variables that are not. Binary and ordinal 
-variables are sometimes imputed under a normal model, and the imputed values 
-may be classified or rounded. This is also how restriktor handles (ordered)
-factors for now. 
-
-A better strategy (not implemented yet) would be to convert (ordered) factors 
-into a pair of dummy variables. If the (ordered) factors have missing values, 
-the dummy variables could be included as columns of Y and imputed, but then you 
-have to decide how to convert the continuously distributed imputed values for 
-these dummy codes back into categories. 
+  ### Note on not full row-rank ###
+  
+  If the restriction matrix is not of full row-rank, this means one of the following:
+  \itemize{
+   \item There is at least one redundant restriction specified in the hypothesis. Then, either 
+    \itemize{
+      \item[a] Leave the redundant one out 
+      \item[b] Use another (more time-consuming) way of obtaining the level probabilities 
+      for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
+      }
+   \item There is at least one range restriction (e.g., -2 < group1 < 2). 
+         Such a restriction can be evaluated but there is a sensitivity (of a scaling 
+         factor in the covariance matrix, like with a prior in a Bayes factor) which 
+         currently cannot be checked for.
+   \item There is at least one conflicting restriction (e.g., 2 < group1 < -2).
+  }
+    Such a restriction can evidently never hold and is thus impossible to evaluate. 
+    To prevent this type of error delete the one that is incorrect.
 }
 
 \value{The function returns a dataframe with the log-likelihood,
 penalty term, GORIC(A) values and the GORIC(A) weights. Furthermore, a dataframe
 is returned with the relative GORIC(A) weights. 
 }
+
 
 \references{
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
@@ -207,6 +232,37 @@ Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/1070551090300
 
 
 \examples{
+\dontrun{
+## By following these examples, you can appropriately specify hypotheses based on 
+## your research questions and analytical framework.
+
+# The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
+# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
+
+# text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
+h1 <- '(x1, x2, x3) > 0'
+h2 <- '(x1, x3) > 0; x2 = 0'
+h3 <- 'x1 > 0; x2 < 0; x3 = 0'
+hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
+
+# define constraints matrix directly (note that the constraints have to be specified pairwise).
+# the element names (i.e., constraints, rhs, neq) must be used. 
+h1 <- list(constraints = c(0,1,0)) 
+h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0) 
+hypotheses = list(H1 = h1, H2 = h2)
+
+# mixed syntax:  
+hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
+
+# lavaan object syntax:
+# we need labels (here a, b and c) to define our hypothesis.
+model.lav <- "y ~  1 + a*x1 + b*x2 + c*x3 + x4"
+# fit lavaan model, for example
+fit.lav <- sem(model, data = DATA)
+# define hypothesis syntax
+hypotheses = list(h1 = 'a > b > c')
+}
+
 library(MASS)
 ## lm
 ## unrestricted linear model for ages (in months) at which an 
@@ -225,7 +281,7 @@ H3 <- "GroupPassive = 0; GroupPassive < GroupNo"
 
 
 # object is of class lm
-goric(fit1.lm, constraints = list(H1 = H1, H2 = H2, H3 = H3))
+goric(fit1.lm, hypotheses = list(H1 = H1, H2 = H2, H3 = H3))
 
 # same result, but using objects of class restriktor
 fit1.con <- restriktor(fit1.lm, constraints = H1)
@@ -236,11 +292,11 @@ goric(fit1.con, fit2.con, fit3.con)
 
 # same result, but using the parameter estimates and covariance matrix as input
 # Note, that in case of a numeric input only the gorica(c) can be computed. 
-goric(coef(fit1.lm), VCOV = vcov(fit1.lm), constraints = list(H1 = H1, H2 = H2, H3 = H3))
+goric(coef(fit1.lm), VCOV = vcov(fit1.lm), hypotheses = list(H1 = H1, H2 = H2, H3 = H3))
 
 
 # hypothesis H1 versus the complement (i.e., not H1)
-goric(fit1.lm, constraints = list(H1 = H1), comparison = "complement")
+goric(fit1.lm, hypotheses = list(H1 = H1), comparison = "complement")
 
 
 ## GORICA
@@ -261,20 +317,20 @@ VCOV <- vcov(fit.lm)
 h1 <- "x1 > 0"
 h2 <- "x1 > 0; x2 > 0"
 # use fitted unconstrained linear model
-goric(fit.lm, constraints = list(h1, h2), type = "gorica")
+goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 # use unconstrained estimates
-goric(est, VCOV = VCOV, constraints = list(h1, h2), type = "gorica")
+goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
 ## constraint syntax (matrix notation)
-h1 <- list(amat = c(0,1,0))
-h2 <- list(amat = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
-goric(fit.lm, constraints = list(h1, h2), type = "gorica")
-goric(est, VCOV = VCOV, constraints = list(h1, h2), type = "gorica")
+h1 <- list(constraints = c(0,1,0))
+h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
+goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
 
 ## use parallel processing for computing the level probabilities (i.e., mixing weights)
 \dontrun{
-goric(fit.lm, constraints = list(H1), comparison = "complement",
+goric(fit.lm, hypotheses = list(H1 = H1), comparison = "complement",
       mix.weights = "boot", parallel = "snow", ncpus = 8, mix.bootstrap = 99999)
 }
 }

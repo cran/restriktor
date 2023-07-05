@@ -10,66 +10,102 @@
 # In the added-evidence approach, the aggregated evidence from, says, 5 studies 
 # is stronger than as if the data were combined (as if that was possible).
 
-
-#' @param TypeEv The type of evidence-synthesis approach: Equal-evidence approach (0) or Added-evidence approach (1).
-#' @param S The number of (primary) studies. That is, the results (evidence) of S studies will be aggregated.
-#' @param Param_studies List of S 'named' vectors with the k_s (standardized) parameter estimates of interest of Study s. Thus, there are S items in the list and each item is a 'named' vector with k_s elements: the k_s number of parameter estimates ratioevant for that study. In case each study has the same number of parameters (k) which denote the same (in terms of hypothesis specification), Param_studies can be an S x k 'named' matrix. Note: The names of the vectors (or the column names of the S x 'k' matrix) with estimates should be used in the hypothesis specification.
-#' @param CovMx_studies List of the S covariance matrices of the (standardized) parameter estimates of interest (of size k_s x k_s). In case number of parameters are the same, it can also be a S*k_s x k_s matrix. Note: The columns (and rows) do not need to be named.
-#' @param Hypo_studies A vector of strings containing the NrHypos theory-based hypotheses. If SameHypo = 0, then there should be S specifications of the NrHypos theory-based hypotheses, that is S times NrHypos strings.
-#' @param comparison Indicator of which safeguard-hypothesis should be used: "unconstrained" (default; i.e., all possible theories including the one specified), "none" (only advised when set of hyptheses cover all theories), or (only when 'NrHypos = 1') "complement" (i.e., the remaining theories).
-#'
-
-
 # TODO
-# print functies
 
+#evSyn <- function(object, ...) { UseMethod("evSyn") }
 
+evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
+evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
+evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
+evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
+# -------------------------------------------------------------------------
+## est (list + vec) + cov (list + mat)
+## LL (list + vec) + PT (list + vec)
+## IC weights (list + vec) rowSums = 1
+## IC values (list + vec)
 
-evSyn <- function(object, ...) { UseMethod("evSyn") }
+## object = est, VCOV = cov
+## object = LL, PT = PT
+## object = IC weights + rowsum check
+## object = IC values
+# -------------------------------------------------------------------------
 
 
 evSyn <- function(object, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("VCOV", "PT", "constraints", "type", "comparison", "hypo_names")
+    pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
     if (any(pm == 0L)) { 
       pm.idx <- which(pm == 0L)
       stop("Restriktor Error: ", names(arguments[pm.idx]), " invalid argument(s).")
     }
   }
+
+  # object must be a list
+  if (!is.list(object)) {
+    stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
+  }
+  # object must be a list with numeric vectors
+  obj_isnum <- sapply(object, is.numeric)
+  if ( !any(obj_isnum) ) {
+    stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
+  }
   
-  ## est + VCOV
+  VCOV <- arguments$VCOV
+  PT   <- arguments$PT
+  
+  if (!is.null(VCOV) && !is.list(VCOV)) {
+    stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)
+  } else if (!is.null(VCOV) ) {
+    # check if it is a list of matrices
+    VCOV_isMat <- sapply(VCOV, is.matrix)
+    if (!any(VCOV_isMat)) {
+      stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)  
+    }
+  }
+
+  if (!is.null(PT) && !is.list(PT)) {
+    stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)
+  } else if ( !is.null(PT) ) {
+    # check if it is a list of numeric vectors
+    PT_isNum <- sapply(PT, is.numeric)
+    if (!any(PT_isNum)) {
+      stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)  
+    }
+  }
+
+  if (!is.null(VCOV) & !is.null(PT)) {
+    stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
+  }
+  
+  # if all vectors sum to 1, object contains IC weights
+  obj_isICweights <- FALSE
+  if ( all(abs(sapply(object, sum) - 1) <= sqrt(.Machine$double.eps)) ) {
+   obj_isICweights <- TRUE  
+  } 
+  
+  
+  ## est (vector) + VCOV (matrix)
   ## check if list contains a vector/matrix with the the parameter estimates
-  if (is.list(object) & is.list(arguments$VCOV)) {
-    obj_class <- unique(unlist(lapply(object, class)))
-    
-    # if matrix, then make it numeric vectors
-    if ("matrix" %in% obj_class) {
-      vnames <- lapply(object, function(x) colnames(x))
-      object <- lapply(object, function(x) as.numeric(x))
-      # colnames are not inherited, so these are fixed here.
-      for (i in 1:length(object)) {
-        names(object[[i]]) <- vnames[[i]]
-      }
-    } 
-    evSyn.est(object, ...)
-  } else if (inherits(object, c("matrix", "data.frame")) & 
-             !is.null(arguments$PT)) {
+  if (!is.null(VCOV)) {
+    evSyn_est(object, ...)
+  } else if (!is.null(PT)) {
     # LL + PT
-    evSyn.LL(object, ...)
-  } else if (inherits(object, c("matrix", "data.frame")) & 
-             all(rowSums(object) - 1 > .Machine$double.eps) &
-             is.null(arguments$PT) & 
-             is.null(arguments$VCOV)) { 
+    evSyn_LL(object, ...)
+  } else if (is.null(VCOV) & is.null(PT) & obj_isICweights) { 
+    # IC weights
+    if (!is.null(arguments$type) && arguments$type == "equal") {
+      message("The added-evidence method is the only available approach when weights are included in the input.")
+    }
+    evSyn_ICweights(object, ...)
+  } else if (is.null(VCOV) & is.null(PT) & !obj_isICweights) { 
     # IC values
-    evSyn.ICvalues(object, ...)
-  } else if (inherits(object, "matrix") & is.null(arguments$PT) & 
-             all(rowSums(object) - 1 <= .Machine$double.eps) &
-             is.null(arguments$VCOV)) { 
-    # IC penalty weights
-    evSyn.ICweights(object, ...)
+    if (!is.null(arguments$type) && arguments$type == "equal") { 
+      message("The added-evidence method is the only available approach when the input consists of GORIC(A) values.")
+    }
+    evSyn_ICvalues(object, ...)
   } else {
     stop("restriktor Error: I don't know how to handle the input.")
   }
@@ -79,125 +115,178 @@ evSyn <- function(object, ...) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
-evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
-                      type = c("equal", "added"), 
-                      comparison = c("unconstrained", "complement", "none"), ...) {
+evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
+                           type = c("equal", "added"), 
+                           comparison = c("unconstrained", "complement", "none")) {
   
-  if (!is.list(object) && is.null(VCOV)) {
-    stop("Restriktor Error: object must be a list with (standardized) parameter estimates for each study.")
-  }
-  if (length(object) != length(VCOV)) {
-    stop("Restriktor Error: object must have the same length as VCOV.")
-  }
+  if (missing(comparison)) 
+    comparison <- "none"
+  comparison <- match.arg(comparison)
+
+  if (missing(type)) 
+    type <- "added"
+  type <- match.arg(type)
+
+  # check if VCOV and hypotheses are both a non-empty list
+  if ( !is.list(VCOV) & length(VCOV) == 0 ) {
+    stop("Restriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
+  } 
+
+  if ( !is.list(hypotheses) & length(hypotheses) == 0 ) {
+    stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  
+  } 
   
   # number of primary studies
   S <- length(object)
   V <- length(VCOV)
   
-  if (!is.list(VCOV)) {
-    stop("Restriktor Error: VCOV must be a list with the variance-covariance matrices for each study.")
-  } else {
-    # check if the matrices are all symmetrical
-    VCOV_isSym <- sapply(VCOV, isSymmetric)
-    if (!all(VCOV_isSym)) {
-      sprintf("Restriktor Error: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym))
-      stop(call. = FALSE)  
-    }
-  }
-  
   if (S != V) {
-    stop("Restriktor Error: the number of studies does not match the number of VCOV.")
+    stop("Restriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
   }
-  if (!is.list(object)) {
-    stop("Restriktor Error: object must be list with (standardized) parameter estimates for each study.", call. = FALSE)
+
+  # check if the matrices are all symmetrical
+  VCOV_isSym <- sapply(VCOV, isSymmetric)
+  if (!all(VCOV_isSym)) {
+    stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
   }
-  # if object is a list of class matrix, make it a vector
-  if (any(sapply(object, is.matrix))) {
-    object <- lapply(object, function(x) unlist(as.data.frame(x)))
-  }
-  
-  if (!all(sapply(object, is.vector))) {
-    stop("Restriktor Error: object must be a list with named numeric vectors", call. = FALSE)
-  }
-  
+
   # if only 1 hypothesis is provided, that hypothesis will be applied to all studies
   # This also means that the vector with parameter estimates must have equal names between the studies.
   # check if the user specified the same hypothesis in each study. 
   # number of hypotheses (this should be equal in each study, see check below)
-  NrHypos <- unique(sapply(constraints, length))
-  len_H <- length(unique(sapply(constraints, function(x) gsub("\\s", "", x))))
-  if (len_H == 1L | NrHypos == 1) {
-    SameHypo <- TRUE  
-    Nrhypos <- 1L
+  
+  # determine if same set of hypotheses in each study or different set of hypotheses in each study.
+  diffSet_hypotheses <- sapply(hypotheses, is.list)
+  if (all(!diffSet_hypotheses)) {
+    # same hypotheses in each study
+    sameHypo <- TRUE  
+  } else if (all(diffSet_hypotheses)) {
+    # different hypotheses in each study
+    sameHypo <- FALSE  
   } else {
-    SameHypo <- FALSE  
-  }
+    stop("Restriktor ERROR: use the following hypotheses format:\n",
+         "If you want to apply the same set of hypotheses for each study, use: hypotheses = list(H1, H2, ...).\n",
+         "If you want to apply a different set of hypotheses for each study, use: hypotheses = list(S1 = list(H1, H2), S2 = list(H3, H4)).",
+         call. = FALSE)
     
-  # number of constraints must be equal for each studie. In each study a set of shared theories (i.e., constraints) are compared.
-  if (length(NrHypos) > 1L) {
-    stop("Restriktor Error: the number of constraints must be equal in each study.", call. = FALSE)
-  }
-  if (comparison == "complement" & NrHypos > 1L) {
-    warning("Restriktor Warning: if comparison = 'complement', only one order-restricted hypothesis\n",
-            " is allowed (for now). Therefore, comparison is set to 'unconstrained'.",
-            call. = FALSE)
   }
   
-  # if NrHypos == 1, this means that we apply the same hypotheses to each study
-  if (NrHypos == 1) {
-    NrHypos <- length(constraints)
-    NrHypos_incl <- NrHypos + 1
-    sameHypo <- TRUE
-    if (comparison == "none"){
-      NrHypos_incl <- NrHypos
-    }
-  } else {
-    NrHypos_incl <- NrHypos + 1
-    if (comparison == "none"){
-      NrHypos_incl <- NrHypos
-    }
-    sameHypo <- FALSE
-  }
+  ## for testing purposes only
+  #hypo = list(H1 = list(hypothesis1), H2 = list(hypothesis1, hypothesis2))
+  #hypo = list(H1 = list(hypothesis1, hypothesis2), H2 = list(hypothesis1, hypothesis2))  
+  #hypo = list(H1 = list(hypothesis1), H2 = list(hypothesis2))  
+  #hypo = list(H1 = hypothesis1)  
   
+  # number of hypotheses must be equal for each studie. In each study a set of 
+  # shared theories (i.e., hypotheses) are compared.
+  len_H <- sapply(hypotheses, length)
+  if (!sameHypo) {
+    if (length(unique(len_H)) > 1) {
+      stop("Restriktor ERROR: The number of hypotheses must be consistent across all studies.", call. = FALSE)
+    }
+    
+    if (length(object) != length(len_H)) {
+      stop("Restriktor ERROR: The number of hypotheses does not match the number of studies.", call. = FALSE)
+    }
+  }
+
+  # if same hypo for each study, then only one hypo is allowed for comparison = complement
+  comp_check_same <- sameHypo & length(len_H) == 1
+  # if diff hypo for each study, then only one hypo is allowed for comparison = complement
+  comp_check_diff <- !sameHypo & all(len_H == 1)
+  
+  
+  if (comparison == "complement") {
+    if ((sameHypo && !comp_check_same) | (!sameHypo && !comp_check_diff)) {
+      warning("Restriktor Warning: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
+              " Setting comparison to 'unconstrained' instead.", call. = FALSE)
+      comparison <- "unconstrained"
+    }
+  }
+
+  NrHypos <- length(len_H)
+  NrHypos_incl <- NrHypos + 1
+  if (comparison == "none"){
+    NrHypos_incl <- NrHypos
+  }
+
   LL <- PT <- weight_m <- GORICA_m <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
-    rownames(LL) <- rownames(PT) <- paste0("study_", 1:S)
+    rownames(LL) <- rownames(PT) <- paste0("Study ", 1:S)
 
   CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
-    rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study ", 1:S), "final")
+
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Studies 1"
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
     
   if (NrHypos == 1 & comparison == "complement") {
-    hnames <- c("H1", "Hc")
+    exist_hnames <- names(hypotheses)
+    if (!is.null(exist_hnames)) {
+      exist_hnames <- c(exist_hnames, "Complement")
+      hnames_idx <- exist_hnames != ""
+    } else {
+      exist_hnames <- vector("character", 2L)
+      hnames_idx <- exist_hnames != ""
+    }
+    hnames <- c("H1", "Complement")
+    hnames_idx <- exist_hnames != ""
+    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- exist_hnames
+    names(hypotheses) <- hnames[-max(length(hnames))] # remove Hc
+    
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = 1)
   } else if (comparison == "none"){
+    # existing hypo names
+    exist_hnames <- names(hypotheses)
+    if (!is.null(exist_hnames)) {
+      hnames_idx <- exist_hnames != ""
+    } else {
+      exist_hnames <- vector("character", length(hypotheses))
+      hnames_idx <- exist_hnames != ""
+    }
     hnames <- c(paste0("H", 1:NrHypos))
+    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- exist_hnames
+    names(hypotheses) <- hnames
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   } else {
-    hnames <- c(paste0("H", 1:NrHypos), "Hu")
+    exist_hnames <- names(hypotheses)
+    if (!is.null(exist_hnames)) {
+      exist_hnames <- c(exist_hnames, "Unconstrained")
+      hnames_idx <- exist_hnames != ""
+    } else {
+      exist_hnames <- vector("character", length(hypotheses) + 1L)
+      hnames_idx <- exist_hnames != ""
+    }
+    hnames <- c(paste0("H", 1:NrHypos), "Unconstrained")
+    hnames_idx <- exist_hnames != ""
+    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- exist_hnames
+    names(hypotheses) <- hnames[-max(length(hnames))] # remove Hu
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   }
     
   colnames(GORICA_m) <- colnames(weight_m) <- colnames(LL) <- colnames(PT) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
-  rownames(GORICA_m) <- rownames(ratio.weight_mu) <- rownames(weight_m) <- paste0("study_", 1:S)
+  rownames(GORICA_m) <- rownames(ratio.weight_mu) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
-
+  
   for(s in 1:S) {
     if (sameHypo) {
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         constraints = constraints,
+                         hypotheses = as.list(unlist(hypotheses)),
                          type = 'gorica', comparison = comparison)
     } else {
-      res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         constraints = constraints[[s]],
+      res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
+                         hypotheses = hypotheses[[s]],
                          type = 'gorica', comparison = comparison)
     }
     
     if (comparison == "unconstrained") {
-      ratio.weight_mu[s,] <- res_goric$ratio.gw[, NrHypos_incl]
+      ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
     } else if (comparison == "complement") {
-      ratio.weight_mu[s,] <- res_goric$ratio.gw[1, NrHypos_incl]
+      ratio.weight_mu[s, ] <- res_goric$ratio.gw[1, NrHypos_incl]
     } 
     
-  
     LL[s, ] <- res_goric$result$loglik
     PT[s, ] <- res_goric$result$penalty
     GORICA_m[s, ] <- res_goric$result$gorica
@@ -214,7 +303,6 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-    EvSyn_approach <- "Added-evidence approach"
   } else { 
     # equal-evidence approach
     for(s in 1:S) {
@@ -222,9 +310,8 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s,] <- -2 * sumLL + 2 * sumPT/s
       minGoric <- min(CumulativeGorica[s, ])
-      CumulativeGoricaWeights[s,] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-    EvSyn_approach <- "Equal-evidence approach"
   }
   
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -235,41 +322,47 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
   
   rownames(Final.ratio.GORICA.weights) <- hnames
   hypotheses <- res_goric$hypotheses_usr
-  #names(hypotheses) <- hnames
   
   # Output
   if (NrHypos == 1 & comparison == "complement") {
-    colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
-    colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
+    colnames(ratio.weight_mu) <- c(paste0(names(hypotheses), " vs. ", "Complement"))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
-    out <- list(GORICA_m = GORICA_m, GORICA.weight_m = weight_m, 
-                ratio.GORICA.weight_mc = ratio.weight_mu, LL_m = LL, PT_m = PT,
-                EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
-                hypotheses = hypotheses)
+    out <- list(type = type, 
+                hypotheses = hypotheses,
+                GORICA_m = GORICA_m, 
+                GORICA_weight_m = weight_m, 
+                ratio_GORICA_weight_mc = ratio.weight_mu, 
+                LL_m = LL, PT_m = PT,
+                Cumulative_GORICA = CumulativeGorica, 
+                Cumulative_GORICA_weights = CumulativeGoricaWeights,
+                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   } else if (comparison == "none") {
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
-    out <- list(GORICA_m = GORICA_m, GORICA.weight_m = weight_m, LL_m = LL, PT_m = PT,
-                EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
-                hypotheses = hypotheses)
+    out <- list(type = type,
+                hypotheses = hypotheses,
+                GORICA_m = GORICA_m, 
+                GORICA_weight_m = weight_m, 
+                LL_m = LL, PT_m = PT,
+                Cumulative_GORICA = CumulativeGorica, 
+                Cumulative_GORICA_weights = CumulativeGoricaWeights,
+                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   } else { 
     # unconstrained
-    colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
+    colnames(ratio.weight_mu) <- c(paste0(colnames(CumulativeGorica), " vs. ", "Unconstrained"))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
-    out <- list(GORICA_m        = GORICA_m, 
-                GORICA.weight_m = weight_m, 
-                ratio.GORICA.weight_mu = ratio.weight_mu, 
+    out <- list(type = type,
+                hypotheses = hypotheses,
+                GORICA_m = GORICA_m, 
+                GORICA_weight_m = weight_m, 
+                ratio_GORICA_weight_mu = ratio.weight_mu, 
                 LL_m = LL, 
                 PT_m = PT,
-                EvSyn_approach    = EvSyn_approach, 
-                Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights  = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
+                Cumulative_GORICA = CumulativeGorica, 
+                Cumulative_GORICA_weights = CumulativeGoricaWeights,
+                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   }
   
   class(out) <- c("evSyn.est", "evSyn")
@@ -282,30 +375,22 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
-                     hypo_names = NULL) {
+evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
+                          hypo_names = NULL) {
   
-  if (is.null(PT)) {
-    stop("restriktor Error: no penalty term values found.")
-  }
+  if (missing(type)) 
+    type <- "added"
+  type <- match.arg(type)
   
-  if (inherits(object, "data.frame")) {
-    object <- as.matrix(object)  
-  }
-  if (inherits(PT, "data.frame")) {
-    PT <- as.matrix(PT)  
-  }
+  # check if PT is a non-empty list
+  if ( !is.list(PT) & length(PT) == 0 ) {
+    stop("Restriktor ERROR: PT must be a list of penalty weights.", call. = FALSE)  
+  } 
   
-  if (!inherits(object, c("matrix", "data.frame"))) {
-    stop("Restriktor Error: object must be a data.frame or matrix with the log-likelihood values.")
-  }
   
-  if (!inherits(PT, c("matrix", "data.frame"))) {
-    stop("Restriktor Error: PT must be a data.frame or matrix with the penalty term values.")
-  }
-  
-  S <- nrow(object)
-  NrHypos <- ncol(object) - 1
+  LL <- object
+  S <- length(LL)
+  NrHypos <- length(LL[[1]]) - 1
   if (is.null(hypo_names)) {
     hnames <- paste0("H", 1:(NrHypos + 1))
   } else {
@@ -315,10 +400,16 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(LL) <- colnames(PT) <- colnames(weight_m) <- hnames
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
-  rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study_", 1:S)
   
+  LL <- do.call(rbind, LL)
+  PT <- do.call(rbind, PT)
+  colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(LL) <- colnames(PT) <- colnames(weight_m) <- hnames
+  
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Studies 1"
+  
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
+  rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   sumLL <- 0
   sumPT <- 0
@@ -327,67 +418,60 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
     # added-ev approach
     for(s in 1:S) {
       minIC <- min(IC[s, ])
-      weight_m[s, ] <- as.matrix(exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC))))
+      weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
       
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- as.matrix(-2 * sumLL + 2 * sumPT)
-      
+      CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- as.matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
     }
-    EvSyn_approach <- "Added-evidence approach"
   } else { 
     # equal-ev approach
-    for(s in 1:S){
+    for (s in 1:S) {
+      minIC <- min(IC[s, ])
+      weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
+      
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- as.matrix(-2 * sumLL + 2 * sumPT/s)
+      CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT/s
       
       minGoric <- min(CumulativeGorica[s, ])
-      CumulativeGoricaWeights[s, ] <- as.matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-    EvSyn_approach <- "Equal-evidence approach"
   }
   
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S,]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S,]
-  Final.rel.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
-  rownames(Final.rel.GORICA.weights) <- hnames
-  colnames(Final.rel.GORICA.weights) <- paste0("vs. ", hnames)
+  Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  rownames(Final.ratio.GORICA.weights) <- hnames
+  colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(LL_m = LL, 
+  out <- list(type = type,
+              LL_m = LL, 
               PT_m = PT, 
               GORICA_m = IC, 
-              GORICA.weight_m   = weight_m,
-              EvSyn_approach    = EvSyn_approach, 
-              Cumulative.GORICA = CumulativeGorica, 
-              Cumulative.GORICA.weights = CumulativeGoricaWeights,
-              Final.rel.GORICA.weights  = Final.rel.GORICA.weights)
-  
+              GORICA_weight_m   = weight_m,
+              Cumulative_GORICA = CumulativeGorica, 
+              Cumulative_GORICA_weights = CumulativeGoricaWeights,
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.LL", "evSyn")
   
   return(out)
-  
 }
 
 
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
-evSyn.ICvalues <- function(object, hypo_names = NULL) {
-  
-  if (inherits(object, "data.frame")) {
-    object <- as.matrix(object)  
-  }
+evSyn_ICvalues.list <- function(object, ..., hypo_names = NULL) {
   
   IC <- object
-  S  <- nrow(IC)
-  
-  NrHypos <- ncol(IC) - 1
+  S  <- length(IC)
+  NrHypos <- length(IC[[1]]) - 1
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
   if (is.null(hypo_names)) {
@@ -396,26 +480,30 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
     hnames <- hypo_names
   }
   
+  IC <- do.call(rbind, IC)
+  
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(IC) <- colnames(weight_m) <- hnames
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study", 1:S), "Final")
-  rownames(IC) <- rownames(weight_m) <- paste0("Study", 1:S)
+  
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Studies 1"
+  
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
+  rownames(IC) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   sumIC <- 0
   for(s in 1:S){
     minIC <- min(IC[s, ])
-    weight_m[s, ] <- matrix(exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC))))
+    weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
   
     sumIC <- sumIC + IC[s, ]
     CumulativeGorica[s, ] <- sumIC
     minGoric <- min(CumulativeGorica[s, ])
-    CumulativeGoricaWeights[s, ] <- matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
+    CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
   }
-  
-  EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of IC's)"
-  
+
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
   
@@ -425,12 +513,12 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(GORICA_m          = IC, 
-              GORICA.weight_m   = weight_m,
-              EvSyn_approach    = EvSyn_approach, 
-              Cumulative.GORICA = CumulativeGorica, 
-              Cumulative.GORICA.weights  = CumulativeGoricaWeights,
-              Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
+  out <- list(type              = "added",
+              GORICA_m          = IC, 
+              GORICA_weight_m   = weight_m,
+              Cumulative_GORICA = CumulativeGorica, 
+              Cumulative_GORICA_weights  = CumulativeGoricaWeights,
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.ICvalues", "evSyn")
   
@@ -441,48 +529,47 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior model probabilities
-evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
-  
-  if (inherits(object, "data.frame")) {
-    object <- as.matrix(object)  
-  }
+evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = NULL) {
   
   Weights <- object
-  NrHypos <- ncol(Weights) - 1
-  S <- nrow(object)
+  S <- length(Weights)
+  Weights <- do.call(rbind, Weights)
+  NrHypos <- ncol(Weights)
   
-  if (is.null(PriorWeights)) {
-    PriorWeights <- rep(1/(NrHypos + 1), (NrHypos + 1))
+  if (is.null(priorWeights)) {
+    priorWeights <- rep(1/(NrHypos), (NrHypos))
   }
   # To make it sum to 1 (if it not already did)
-  PriorWeights <- PriorWeights / sum(PriorWeights) 
+  priorWeights <- priorWeights / sum(priorWeights) 
   
   if (is.null(hypo_names)) {
-    hypo_names <- paste0("H", 1:(NrHypos+1))
+    hypo_names <- paste0("H", 1:(NrHypos)) 
   }
   
-  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  colnames(CumulativeWeights) <- hypo_names
-  rownames(CumulativeWeights) <- c(paste0("Study", 1:S), "Final")
+  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
+  colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
   
-  CumulativeWeights[1, ] <- PriorWeights * Weights[1, ] / sum( PriorWeights * Weights[1, ] )
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Studies 1"
+  
+  rownames(CumulativeWeights) <- c(sequence, "Final")
+  CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
   
   for(s in 2:S) {
     CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
   }
-  EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of Weights)"
   
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
-  Final.rel.weights <- Final.weights %*% t(1/Final.weights)
-  rownames(Final.rel.weights) <- hypo_names
-  colnames(Final.rel.weights) <- paste0("vs. ", hypo_names)
+  Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights)
+  rownames(Final.ratio.GORICA.weights) <- hypo_names
+  colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(weight_m           = Weights,
-              EvSyn_approach     = EvSyn_approach,
-              Cumulative.weights = CumulativeWeights,
-              Final.rel.weights  = Final.rel.weights)
+  out <- list(type                       = "added",
+              GORICA_weight_m            = Weights,
+              Cumulative_GORICA_weights  = CumulativeWeights,
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.ICweights", "evSyn")
   
@@ -491,22 +578,262 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
 }
 
 
+print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+  
+  # added or equal approach
+  type <- x$type
+  
+  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
+  cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
+  
+  if (!is.null(x$Cumulative_GORICA_weights)) {
+    cat("\nFinal GORICA weights:\n") 
+    cgw <- sapply(x$Cumulative_GORICA_weights["Final", , drop = FALSE], 
+                  FUN = function(x) format_numeric(x, digits = digits))
+    names(cgw) <- colnames(x$Cumulative_GORICA_weights)
+    print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
+  
+  cat("\nRatio final GORICA weights:\n")  
+  print(apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) format_numeric(x, digits = digits)), 
+        print.gap = 2, quote = FALSE, right = TRUE)
+  cat("\n")
+  
+  message(x$messages$mix_weights)
+}
+
+
+
+summary.evSyn <- function(object, ...) {
+  x <- object
+  class(x) <- NULL
+  
+  ans <- list(
+    type = x$type,
+    n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
+    hypotheses = x$hypotheses,
+    GORICA_weight_m = x$GORICA_weight_m,
+    GORICA_m = x$GORICA_m,
+    LL_m = x$LL_m,
+    PT_m = x$PT_m,
+    Cumulative_GORICA_weights = x$Cumulative_GORICA_weights,
+    Cumulative_GORICA = x$Cumulative_GORICA
+  )
+  
+  if (!is.null(x$LL_m)) {
+    sequence    <- paste0("Studies 1-", 1:ans$n_studies)
+    sequence[1] <- "Studies 1"
+    Cumulative_LL <- apply(x$LL_m, 2, cumsum)
+    Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(x$LL_m), 
+                            dimnames = list(sequence, colnames(x$LL_m)))
+    ans$Cumulative_LogLik <- Cumulative_LL
+  }
+  
+  if (!is.null(x$PT_m)) {
+    sequence    <- paste0("Studies 1-", 1:ans$n_studies)
+    sequence[1] <- "Studies 1"
+    Cumulative_PT <- apply(x$PT_m[,, drop = FALSE], 2, cumsum)  
+    Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x$PT_m), 
+                            dimnames = list(sequence, colnames(x$PT_m)))
+    if (x$type == "equal") {
+      Cumulative_PT <- Cumulative_PT / seq_len(ans$n_studies)
+    } 
+    ans$Cumulative_PT <- Cumulative_PT
+  }
+  
+  final <- c()
+  
+  if (!is.null(x[["Cumulative_GORICA_weights"]])) {
+    fcgw <- t(x[["Cumulative_GORICA_weights"]]["Final", ])
+    rownames(fcgw) <- "GORICA weights"
+    colnames(fcgw)  <- colnames(x[["Cumulative_GORICA_weights"]])
+    final <- rbind(final, fcgw)
+  }
+  
+  if (!is.null(x[["Cumulative_GORICA"]])) {
+    fcgv <- t(x[["Cumulative_GORICA"]]["Final", ])
+    rownames(fcgv) <- "GORICA values"
+    final <- rbind(final, fcgv)
+  }
+  
+  if (!is.null(ans$Cumulative_LogLik)) {
+    fcllv <- t(ans$Cumulative_LogLik[ans$n_studies, ])
+    rownames(fcllv) <- "Log-likelihood values"
+    final <- rbind(final, fcllv)
+  }
+  
+  if (!is.null(ans$Cumulative_PT)) { 
+    fcptv <- t(ans$Cumulative_PT[ans$n_studies, ])
+    rownames(fcptv) <- "Penalty term values"
+    final <- rbind(final, fcptv)
+  }
+  
+  ans$Final_Cumulative_results <- final
+  
+  if (!is.null(x$LL_m)) {
+    Final_ratio_Cumulative_LL <- ans$Cumulative_LogLik[ans$n_studies, ] %*% t(1/ans$Cumulative_LogLik[ans$n_studies, ])
+    rownames(Final_ratio_Cumulative_LL) <- colnames(ans$Cumulative_LogLik)
+    colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", colnames(ans$Cumulative_LogLik))
+    ans$Final_ratio_Cumulative_LL <- Final_ratio_Cumulative_LL  
+  }
+  
+  ans$Ratio_GORICA_weight_mu <- x$ratio_GORICA_weight_mu
+  ans$Ratio_GORICA_weight_mc <- x$ratio_GORICA_weight_mc
+  ans$Final_ratio_GORICA_weights <- x$Final_ratio_GORICA_weights
+  
+  ans$messages <- list(mix_weights = x$messages$mix_weights)
+  class(ans) <- "summary.evSyn"
+  
+  ans
+}
+
+
+
+## print.summary function
+print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+  
+  # added or equal approach
+  type <- x$type
+  # number of studies
+  S <- x$n_studies
+  
+  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
+  cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
+  
+  indentation <- "    "  # Four spaces for indentation
+  
+  cat("\nStudy-specific results:\n")
+  
+  if (!is.null(x$GORICA_weight_m)) {
+    cat("\n    GORICA weights:\n")  
+    formatted_gw <- apply(x$GORICA_weight_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$GORICA_m)) {
+    cat("\n    GORICA values:\n")  
+    formatted_gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\n    Log-likelihood values:\n")  
+    formatted_llv <- apply(x$LL_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$PT_m)) {
+    cat("\n    Penalty term values:\n")  
+    formatted_ptv <- apply(x$PT_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_ptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  
+  cat("\nCumulative results:\n")
+  
+  if (!is.null(x[["Cumulative_GORICA_weights"]])) {
+    cat("\n    GORICA weights:\n")  
+    formatted_cgw <- apply(x$Cumulative_GORICA_weights[1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_cgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x[["Cumulative_GORICA"]])) {
+    cat("\n    GORICA values:\n")  
+    formatted_cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\n    Log-likelihood values:\n")  
+    formatted_cllv <- apply(x$Cumulative_LogLik[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_cllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$PT_m)) {
+    cat("\n    Penalty term values:\n")  
+    formatted_cptv <- apply(x$Cumulative_PT[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_cptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  
+  cat("\nFinal results:\n")
+  formatted_final <- apply(x$Final_Cumulative_results[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+  captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
+  adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+  cat(paste0(adjusted_output, "\n"), sep = "")
+  
+  
+  cat("\nFinal ratios:\n")
+  
+  if (!is.null(x$Final_ratio_GORICA_weights)) {
+    cat("\n    GORICA weights:\n")  
+    formatted_frgw <- apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_frgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\n    Log-likelihood values:\n")  
+    formatted_frllv <- apply(x$Final_ratio_Cumulative_LL, c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_frllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  cat("\n")
+  message(x$messages$mix_weights)
+}
+
+
 
 ## plot function
 plot.evSyn <- function(x, ...) {
-  namesH <- colnames(x$GORICA_m)
-  NrHypos_incl <- ncol(x$GORICA_m)
-  S <- nrow(x$GORICA_m)
+  namesH <- colnames(x$GORICA_weight_m)
+  NrHypos_incl <- ncol(x$GORICA_weight_m[,,drop = FALSE])
+  S <- nrow(x$GORICA_weight_m[,,drop = FALSE])
   Name_studies <- as.factor(1:S)
   
-  weight_m <- x$GORICA.weight_m
-  CumulativeGoricaWeights <- x$Cumulative.GORICA.weights
+  weight_m <- x$GORICA_weight_m
+  CumulativeGoricaWeights <- x$Cumulative_GORICA_weights
   
   # Create data frame for per study weights
-  per_study_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
-                             weight = c(weight_m))
-  per_study_df$weight_type <- "per study"
-  
+  if (all(is.na(weight_m))) {
+    per_study_df <- NULL
+    times <- 1
+  } else {
+    per_study_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
+                               weight = c(weight_m))
+    per_study_df$weight_type <- "per study"
+    times <- 2
+  }
   # Create data frame for cumulative weights
   cumulative_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
                               weight = c(CumulativeGoricaWeights[1:S, ]))
@@ -514,10 +841,10 @@ plot.evSyn <- function(x, ...) {
   
   # Combine data frames
   plot_data <- rbind(per_study_df, cumulative_df)
-  plot_data$variable <- rep(rep(namesH, each = S), times = 2)
+  plot_data$variable <- rep(rep(namesH, each = S), times = times)
   
   # Create plot
-  ggplot(plot_data, aes(x = .data[['study']], 
+  ggplot(plot_data, aes(x = .data[['study']],  
                         y = .data[['weight']], 
                         shape    = .data[['weight_type']], 
                         linetype = .data[['weight_type']], 
@@ -525,14 +852,11 @@ plot.evSyn <- function(x, ...) {
     geom_point(size = 3) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
               aes(group = .data[['variable']]), linewidth = 1) +
-    #scale_shape_manual(values = c(8, 16)) +
-    #scale_linetype_manual(values = c("solid", "dashed")) +
-    #scale_color_manual(values = c("#D81B60", "#1E88E5")) +
+    scale_color_brewer(palette = "Dark2") +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
       legend.position = "bottom",
       legend.margin = margin(t = 10, r = 0, b = 3, l = 0),
-      #legend.title = element_text(size = 18),
       legend.key = element_blank(),
       legend.text = element_text(size = 12),
       axis.text.x  = element_text(size = 12), axis.text.y = element_text(size = 12),
