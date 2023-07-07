@@ -65,7 +65,7 @@ evSyn(object, \ldots)
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
   the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
   However, if a different set of hypotheses is applied to each study, the syntax 
-  structure should be as follows: hypotheses = list(H1 = list(H11, H12), H2 = list(H21, H22)).
+  structure should be as follows: hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22)).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
   section below.
 }
@@ -111,12 +111,6 @@ h2 <- '(x1, x3) > 0; x2 = 0'
 h3 <- 'x1 > 0; x2 < 0; x3 = 0'
 hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
 
-# define constraints matrix directly (note that the constraints have to be specified pairwise).
-# the element names (i.e., constraints, rhs, neq) must be used. 
-h1 <- list(constraints = c(0,1,0)) 
-h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0) 
-hypotheses = list(H1 = h1, H2 = h2)
-
 # mixed syntax:  
 hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 
@@ -124,7 +118,20 @@ hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 hypotheses = list(H1, H2, \ldots)
 
 # a different set of hypotheses for each study: 
-hypotheses = list(Study1 = list(H1, H2), Study2 = list(H3, H4))
+# note that the list names set1 and set2 are redundant and can be left out. 
+# It is crucial to ensure that the hypotheses across each set are ordered in a similar manner.
+
+H11 <- 'group1 = group2 > group3' 
+H12 <- 'group2 > group1 > group3'   
+
+H21 <- 'gr1 = gr2 > gr3'
+H22 <- 'gr2 > gr1 > gr3'
+
+# correct
+hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22))
+
+# NOT correct
+hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
 }
 
 ## Example 1 - 4 studies

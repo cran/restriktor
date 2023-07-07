@@ -20,4 +20,4 @@
 #   out <- list(convex = convex, closed = closed)
 #   return(out)
 # }
-# 
+
