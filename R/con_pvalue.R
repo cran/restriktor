@@ -130,7 +130,9 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                                        control  = NULL,
                                        verbose  = FALSE, ...) {
 
-  old.options <- options(); options(warn = warn)
+  old_options <- options()
+  on.exit(options(old_options))
+  options(warn = warn)
   
   model.org <- model$model.org
   fam <- family(model.org)
@@ -213,7 +215,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                                 control = control))
     if (inherits(boot.conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
-      options(old.options)
       return(NULL)
     }
     OUT <- boot.conTest$Ts
@@ -224,7 +225,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
       OUT
    }
 
-   options(old.options)
    RR <- sum(R)
      res <- if (ncpus > 1L && (have_mc || have_snow)) {
        if (have_mc) {
@@ -289,7 +289,9 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
                                         control  = NULL,
                                         verbose  = FALSE, ...) {
 
-  old.options <- options(); options(warn = warn)
+  old_options <- options()
+  on.exit(options(old_options))
+  options(warn = warn)
   
   model.org <- model$model.org
   y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
@@ -382,7 +384,6 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
                                 control = control))
     if (inherits(boot.conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
-      options(old.options)
       return(NULL)
     }
     OUT <- boot.conTest$Ts
@@ -393,7 +394,6 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
       OUT
   }
     
-  options(old.options)
   RR <- sum(R)
   res <- if (ncpus > 1L && (have_mc || have_snow)) {
     if (have_mc) {

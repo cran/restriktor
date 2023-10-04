@@ -19,15 +19,16 @@ same central theory.}
 evSyn(object, \ldots)
 
 \method{evSyn_est}{list}(object, \ldots, VCOV = list(), hypotheses = list(),
-      type = c("equal", "added"), 
-      comparison = c("unconstrained", "complement", "none"))
+      type = c("equal", "added", "average"), 
+      comparison = c("unconstrained", "complement", "none"),
+      hypo_names = c())
 
-\method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added"),
-      hypo_names = NULL)
+\method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added", "average"),
+      hypo_names = c())
 
-\method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = NULL)
+\method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = c())
 
-\method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = NULL)
+\method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = c())
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -55,15 +56,12 @@ evSyn(object, \ldots)
   \item{x}{an object of class \code{evSyn}}
 
   \item{type}{type of evidence-synthesis approach: Equal-evidence approach 
-  (\code{type = "equal"}) or Added-evidence approach (\code{type = "added"}).
-  In case of an equal-evidence approach, aggregating evidence from, say, 5 studies 
-  with n = 100 observations is the same as obtaining evidence from 1 study (as if it was
-  possible) with n = 500 observations (like meta-analysis does). In the added-evidence 
-  approach, the aggregated evidence from, says, 5 studies is stronger than as if 
-  the data were combined (as if that was possible).}
+  (\code{type = "equal"}), Added-evidence approach (\code{type = "added"}), or
+  Average-evidence approach (\code{type = "average"}). See details for more 
+  information.}
 
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
-  the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
+  the syntax structure should be as follows: "hypotheses = list(H1, H2, \ldots)". 
   However, if a different set of hypotheses is applied to each study, the syntax 
   structure should be as follows: hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22)).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
@@ -90,6 +88,53 @@ evSyn(object, \ldots)
 }
 
 
+\details{
+In the \strong{added-evidence} approach, evidence from each study or dataset is 
+cumulatively aggregated. This means that for every new study, the log-likelihood 
+and the penalty term are added to the cumulative totals. The strength of the 
+aggregated evidence in this approach depends on the nature of the evidence itself. 
+Simply having more studies doesn't necessarily mean stronger evidence if those 
+studies provide weak or contradictory evidence.\cr 
+Opt for this approach when you anticipate each new piece of evidence to provide an 
+incremental contribution to the overall evidence, without the need to normalize or 
+average across datasets. It's especially suitable when you believe that the 
+aggregated evidence from multiple studies is stronger than if the data were combined 
+into a single study.
+
+The \strong{equal-evidence} approach aggregates the cumulative evidence in the same 
+manner as the added-evidence approach. However, when calculating the GORICA, the 
+cumulative evidence is divided by the number of studies. This ensures that the 
+contribution from each study or dataset remains equal, regardless of the total count. 
+Conceptually, aggregating evidence from multiple studies in this approach can be 
+likened to obtaining evidence from a single larger study, similar to how a 
+meta-analysis treats combined evidence.\cr
+Choose this method when you want each study to contribute equally to the overall 
+evidence, irrespective of the size or scope of each individual dataset. It's ideal 
+for situations where you view the combined evidence from multiple studies as 
+equivalent to that from a single, larger study.
+
+The \strong{average-evidence} method can be conceptualized as a form of multiverse 
+analysis. When faced with a single dataset, there are often numerous analytical 
+choices available, such as handling missing data, selecting variables, or choosing 
+statistical methods. Each choice can lead to a different analysis or model, creating 
+a "multiverse" of possible outcomes.\cr
+For each of these analyses, an "evidence" score can be calculated, indicating how 
+well the model fits the data. Some models might offer a superior fit, while others 
+might not align as closely with the data. The average-evidence method aggregates 
+these scores, providing an average measure of fit across all considered models.
+This approach offers an overarching perspective on the general trend across all 
+analyses. If the average evidence suggests a good fit, it indicates that the 
+majority of the chosen analyses align well with the data. This method is invaluable 
+for assessing the robustness of results, ensuring that findings are not merely 
+artifacts of a specific analytical choice but are consistent across various model 
+specifications on the same dataset.\cr
+Opt for the average-evidence approach when you wish to gauge the central tendency 
+of evidence across multiple analytical choices. It's especially beneficial when 
+aiming to determine the robustness of results across various model specifications 
+applied to the same dataset.
+}
+
+
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.}
@@ -98,7 +143,6 @@ for the theory-based hypotheses.}
 \author{Leonard Vanbrabant and Rebecca Kuiper}
 
 \examples{
-\dontrun{
 ## By following these examples, you can appropriately specify hypotheses based on 
 ## your research questions and analytical framework.
 
@@ -115,7 +159,7 @@ hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
 hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 
 # the same set of hypotheses for each study:
-hypotheses = list(H1, H2, \ldots)
+# hypotheses = list(H1, H2, \ldots)
 
 # a different set of hypotheses for each study: 
 # note that the list names set1 and set2 are redundant and can be left out. 
@@ -132,7 +176,6 @@ hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22))
 
 # NOT correct
 hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
-}
 
 ## Example 1 - 4 studies
 est_1 <- c(beta1 = 0.09)
@@ -164,9 +207,9 @@ evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies,
                     comparison = "none")
 evS4_added
 summary(evS4_added)
-\dontrun{
+
 plot(evS4_added)
-}
+
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
                     type = "equal", 
@@ -174,9 +217,7 @@ evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies,
 
 evS4_equal
 summary(evS4_equal)
-\dontrun{
 plot(evS4_equal)
-}
 
 ## Example 2 - 2 studies
 est_1 <- c(1.88, 2.54, 0.02)
@@ -206,9 +247,7 @@ hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
                     type = "added", comparison = "unconstrained") 
 evS2_added
-\dontrun{
 plot(evS2_added)
-}
 
 ## Example 3 - 3 studies
 
@@ -281,9 +320,7 @@ evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies,
               type = "added", 
               comparison = "complement") 
 evS3
-\dontrun{
 plot(evS3)
-}
 
 ## Example 4 - loglikelihood values and penalty values
 # make it a list

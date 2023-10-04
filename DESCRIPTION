@@ -1,7 +1,7 @@
 Package: restriktor
 Title: Restricted Statistical Estimation and Inference for Linear
         Models
-Version: 0.5-20
+Version: 0.5-30
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "info@restriktor.org"),
@@ -18,12 +18,12 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
 Description: Allow for easy-to-use testing or evaluating of linear equality and inequality restrictions about parameters and effects in (generalized) linear statistical models.
 Depends: R(>= 4.0.0)
 Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, quadprog,
-        norm2, ggplot2
+        norm, ggplot2
 License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
-Packaged: 2023-07-07 13:46:01 UTC; l.vanbrabant
+Packaged: 2023-10-03 15:03:24 UTC; l.vanbrabant
 Author: Leonard Vanbrabant [aut, cre],
   Rebecca Kuiper [aut],
   Yves Rosseel [ctb],
@@ -32,4 +32,4 @@ Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests: knitr, bain, rmarkdown
 VignetteBuilder: knitr
 Repository: CRAN
-Date/Publication: 2023-07-07 14:40:02 UTC
+Date/Publication: 2023-10-04 07:10:02 UTC

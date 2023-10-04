@@ -322,17 +322,15 @@ coef(fit1.lm)
 fit1.con <- restriktor(fit1.lm, constraints = ' GroupActive  < GroupPassive < GroupNo ')
 summary(fit1.con)
 
-\dontrun{ 
 # Or in matrix notation.
 myConstraints1 <- rbind(c(-1, 1, 0),
                         c( 0,-1, 1))
-myRhs1 <- rep(0L, nrow(R1)) 
+myRhs1 <- rep(0L, nrow(myConstraints1)) 
 myNeq1 <- 0
 
 fit1.con <- restriktor(fit1.lm, constraints = myConstraints1,
                        rhs = myRhs1, neq = myNeq1)
 summary(fit1.con)
-}            
 
 #########################
 ## Artificial examples ##
@@ -383,18 +381,17 @@ fit3.con <- restriktor(fit3.rlm, constraints = myConstraints3,
                        se = "HC0")
 summary(fit3.con)
 
-\dontrun{ 
+
 ## increasing means in matrix notation.
 myConstraints3 <- rbind(c(-1, 1, 0, 0),
                         c( 0,-1, 1, 0),
                         c( 0, 0,-1, 1))
 myRhs3 <- rep(0L, nrow(myConstraints3)) 
-myNeq2 <- 0
+myNeq3 <- 0
 
 fit3.con <- restriktor(fit3.rlm, constraints = myConstraints3,
-                       rhs = myRhs2, neq = myNeq2, se = "HC0")
+                       rhs = myRhs3, neq = myNeq3, se = "HC0")
 summary(fit3.con)
-}            
 
 ## equality restrictions only.
 myConstraints4 <- ' group1 = group2 = group3 = group4 '

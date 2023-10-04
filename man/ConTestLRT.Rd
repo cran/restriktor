@@ -209,16 +209,15 @@ fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
 
 iht(fit_restr1, test = "LRT")
 
-\dontrun{ 
-  # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 0,  1),
-                 c( 0, 1, -1))
-  myRhs1 <- rep(0L, nrow(Amat1)) 
-  myNeq1 <- 0
-  
-  iht(fit1_lm, constraints = Amat1, test = "LRT",
-      rhs = myRhs1, neq = myNeq1)
-}            
+
+# Or in matrix notation.
+Amat1 <- rbind(c(-1, 0,  1),
+               c( 0, 1, -1))
+myRhs1 <- rep(0L, nrow(Amat1)) 
+myNeq1 <- 0
+
+iht(fit1_lm, constraints = Amat1, test = "LRT",
+    rhs = myRhs1, neq = myNeq1)
 
 #########################
 ## Artificial examples ##
@@ -250,17 +249,16 @@ fit2_con <- restriktor(fit2_lm, constraints = myConstraints2)
 
 iht(fit2_con, test = "LRT")
 
-\dontrun{ 
-  # increasing means in matrix notation.
-  Amat2 <- rbind(c(-1, 1, 0, 0),
-                 c( 0,-1, 1, 0),
-                 c( 0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(Amat2)) 
-  myNeq2 <- 0
 
-  iht(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-      type = "A", test = "LRT", boot = "parametric", R = 9)
-}            
+# increasing means in matrix notation.
+Amat2 <- rbind(c(-1, 1, 0, 0),
+               c( 0,-1, 1, 0),
+               c( 0, 0,-1, 1))
+myRhs2 <- rep(0L, nrow(Amat2)) 
+myNeq2 <- 0
+
+iht(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+    type = "A", test = "LRT", boot = "parametric", R = 9)
 
 ## example 3:
 # combination of equality and inequality constraints.

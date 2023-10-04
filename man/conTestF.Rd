@@ -231,7 +231,7 @@ fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
 iht(fit.restr1)
 
-\dontrun{ 
+\donttest{ 
   # Or in matrix notation.
   Amat1 <- rbind(c(-1, 0,  1),
                  c( 0, 1, -1))
@@ -273,17 +273,15 @@ fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
 iht(fit2.con)
 
-\dontrun{ 
-  # increasing means in matrix notation.
-  Amat2 <- rbind(c(-1, 1, 0, 0),
-                 c( 0,-1, 1, 0),
-                 c( 0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(Amat2)) 
-  myNeq2 <- 0
+# increasing means in matrix notation.
+Amat2 <- rbind(c(-1, 1, 0, 0),
+               c( 0,-1, 1, 0),
+               c( 0, 0,-1, 1))
+myRhs2 <- rep(0L, nrow(Amat2)) 
+myNeq2 <- 0
 
-  iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-      type = "A", boot = "parametric", R = 9)
-}            
+iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+    type = "A", boot = "parametric", R = 9)
 
 ## example 3:
 # combination of equality and inequality constraints.

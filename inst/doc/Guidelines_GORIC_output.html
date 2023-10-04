@@ -340,7 +340,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h1 class="title toc-ignore">Guidelines interpretation GORIC(A)
 output</h1>
 <h4 class="author">Rebecca M. Kuiper and Leonard Vanbrabant</h4>
-<h4 class="date">07 juli 2023</h4>
+<h4 class="date">03 oktober 2023</h4>
 
 
 
@@ -486,13 +486,13 @@ the set.</p>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>results_1c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>results_1c</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -123.384    2.832  252.431           0.679            0.698          0.830
 2  complement  -124.133    3.668  255.601           0.321            0.302          0.170
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 4.880 times more support than its complement.</code></pre>
 <p>From this, you can conclude that <span class="math inline">\(H_1:
 \mu_1 &gt; \mu_2 &gt; \mu_3\)</span> is <span class="math inline">\(.83/.17 \approx 4.88\)</span> time more supported
@@ -549,13 +549,12 @@ there is</em> (in case of a small sample size).</p></li>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>results_1u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1))</span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>results_1u</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1             H1  -123.384    2.832  252.431           0.500            0.763          0.763
-2  unconstrained  -123.384    4.000  254.767           0.500            0.237          0.237
----</code></pre>
+2  unconstrained  -123.384    4.000  254.767           0.500            0.237          0.237</code></pre>
 <p>From this, you can conclude that <span class="math inline">\(H_1:
 \mu_1 &gt; \mu_2 &gt; \mu_3\)</span> is more supported than the
 unconstrained (since <span class="math inline">\(.763/.237 &gt;
@@ -670,14 +669,13 @@ Section.</p></li>
 <span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span>
 <span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1             H1  -123.384    2.832  252.431           0.500            0.433          0.763
 2             H2  -131.346    2.832  268.356           0.000            0.433          0.000
-3  unconstrained  -123.384    4.000  254.767           0.500            0.135          0.237
----</code></pre>
+3  unconstrained  -123.384    4.000  254.767           0.500            0.135          0.237</code></pre>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">round</span>(results_12u<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>              vs. H1   vs. H2 vs. unconstrained
 H1             1.000 2871.230             3.216
@@ -745,13 +743,12 @@ discussed in the Special cases Section.</p>
 <span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2), <span class="at">comparison =</span> <span class="st">&quot;none&quot;</span>)</span>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
    model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1     H1  -123.384    3.500  253.767           0.978            0.500          0.978
-2     H2  -127.183    3.500  261.366           0.022            0.500          0.022
----</code></pre>
+2     H2  -127.183    3.500  261.366           0.022            0.500          0.022</code></pre>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">round</span>(results_12<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>   vs. H1 vs. H2
 H1  1.000 44.682
@@ -820,13 +817,13 @@ difference in treatments you would like to find.</p>
 <span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1g =</span> H1g), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1         H1g  -123.384    2.832  252.431           0.831            0.698          0.919
 2  complement  -124.978    3.668  257.292           0.169            0.302          0.081
---- 
+---
 The order-restricted hypothesis &#39;H1g&#39; has 11.363 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">round</span>(results_12<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>           vs. H1g vs. complement
@@ -851,13 +848,13 @@ to select the hypothesis:</p>
 <span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1m =</span> H1m), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1         H1m  -123.384    2.832  252.431           0.736            0.698          0.865
 2  complement  -124.409    3.668  256.154           0.264            0.302          0.135
---- 
+---
 The order-restricted hypothesis &#39;H1m&#39; has 6.433 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">round</span>(results_12<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>           vs. H1m vs. complement
@@ -957,14 +954,13 @@ building.</p>
 <span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span>
 <span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1             H1  -123.384    2.832  252.431           0.333            0.548          0.548
 2             H2  -123.384    3.500  253.767           0.333            0.281          0.281
-3  unconstrained  -123.384    4.000  254.767           0.333            0.171          0.171
----</code></pre>
+3  unconstrained  -123.384    4.000  254.767           0.333            0.171          0.171</code></pre>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">round</span>(results_12u<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>              vs. H1 vs. H2 vs. unconstrained
 H1             1.000  1.950             3.216
@@ -1011,14 +1007,13 @@ weights for <span class="math inline">\(H_1\)</span>, <span class="math inline">
 <span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span>
 <span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1             H1  -124.316    2.832  254.297           0.164            0.548          0.323
 2             H2  -123.384    3.500  253.767           0.418            0.281          0.421
-3  unconstrained  -123.384    4.000  254.767           0.418            0.171          0.255
----</code></pre>
+3  unconstrained  -123.384    4.000  254.767           0.418            0.171          0.255</code></pre>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">round</span>(results_12u<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>              vs. H1 vs. H2 vs. unconstrained
 H1             1.000  0.767             1.265
@@ -1069,13 +1064,13 @@ the unconstrained always obtains support (because it also includes <span class="
 <span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a>results_n <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">Hn =</span> Hn), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>results_n</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          Hn  -123.384    3.168  253.103           0.718            0.541          0.750
 2  complement  -124.316    3.332  255.297           0.282            0.459          0.250
---- 
+---
 The order-restricted hypothesis &#39;Hn&#39; has 2.994 times more support than its complement.</code></pre>
 </div>
 </div>
@@ -1102,13 +1097,13 @@ complement</h4>
 <span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>results_1c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>results_1c</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -123.450    2.832  252.564           0.483            0.698          0.683
 2  complement  -123.384    3.668  254.103           0.517            0.302          0.317
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 2.159 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co">#</span></span>
 <span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="fu">coef</span>(fit)</span></code></pre></div>
@@ -1163,15 +1158,14 @@ weights.</p>
 <span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a>results_b123 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">Hb1 =</span> Hb1, <span class="at">Hb2 =</span> Hb2, <span class="at">Hb3 =</span> Hb3))</span>
 <span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a>results_b123</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1            Hb1  -126.132    2.500  257.263           0.031            0.258          0.050
 2            Hb2  -123.450    2.500  251.900           0.458            0.258          0.725
 3            Hb3  -126.570    2.000  257.139           0.020            0.426          0.053
-4  unconstrained  -123.384    4.000  254.767           0.490            0.058          0.173
----</code></pre>
+4  unconstrained  -123.384    4.000  254.767           0.490            0.058          0.173</code></pre>
 </div>
 </div>
 <div id="example-h_1-h_2-and-the-unconstrained" class="section level4">
@@ -1184,14 +1178,13 @@ Results:
 <span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span>
 <span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1             H1  -123.450    2.832  252.564           0.319            0.494          0.477
 2             H2  -123.384    3.168  253.103           0.341            0.353          0.364
-3  unconstrained  -123.384    4.000  254.767           0.341            0.154          0.159
----</code></pre>
+3  unconstrained  -123.384    4.000  254.767           0.341            0.154          0.159</code></pre>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="fu">round</span>(results_12u<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>              vs. H1 vs. H2 vs. unconstrained
 H1             1.000  1.310             3.009
@@ -1246,17 +1239,14 @@ weights.</p>
 <span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a>results_b <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">Hb =</span> Hb), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a>results_b</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
-Level probabilities:
-  Number of requested bootstrap draws 99999 
-  Number of successful bootstrap draws for Hb: 99999
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          Hb  -123.384    2.497  251.762           0.502            0.818          0.819
 2  complement  -123.391    4.000  254.783           0.498            0.182          0.181
---- 
+---
 The order-restricted hypothesis &#39;Hb&#39; has 4.528 times more support than its complement.</code></pre>
 </div>
 </div>
@@ -1312,13 +1302,13 @@ discussed next (after the example).</p>
 <span id="cb45-5"><a href="#cb45-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb45-6"><a href="#cb45-6" tabindex="-1"></a>results_0c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb45-7"><a href="#cb45-7" tabindex="-1"></a>results_0c</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -139.114    2.000  282.228           0.499            0.818          0.817
 2  complement  -139.111    3.500  285.222           0.501            0.182          0.183
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 4.469 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="fu">round</span>(results_0c<span class="sc">$</span>ratio.lw, <span class="dv">3</span>) <span class="co"># ratio of loglik weights</span></span></code></pre></div>
 <pre><code>           vs. H1 vs. complement
@@ -1392,17 +1382,14 @@ use this when creating a training set is not possible.</p>
 <span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb51-8"><a href="#cb51-8" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
-Level probabilities:
-  Number of requested bootstrap draws 99999 
-  Number of successful bootstrap draws for H1: 99999
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -139.111    2.001  282.224           0.573            0.881          0.908
 2  complement  -139.404    4.000  286.808           0.427            0.119          0.092
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 9.892 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="fu">round</span>(results_12<span class="sc">$</span>ratio.lw, <span class="dv">3</span>) <span class="co"># ratio of loglik weights</span></span></code></pre></div>
 <pre><code>           vs. H1 vs. complement
@@ -1474,13 +1461,13 @@ in future research.</p>
 <span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a>results_2c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a>results_2c</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -120.398    2.832  246.459           0.419            0.698          0.625
 2  complement  -120.072    3.668  247.481           0.581            0.302          0.375
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 1.667 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a><span class="fu">round</span>(results_2c<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>           vs. H1 vs. complement
@@ -1516,13 +1503,13 @@ for <span class="math inline">\(H_1\)</span>).</p>
 <span id="cb63-5"><a href="#cb63-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb63-6"><a href="#cb63-6" tabindex="-1"></a>results_3c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb63-7"><a href="#cb63-7" tabindex="-1"></a>results_3c</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -139.436    2.832  284.536           0.419            0.698          0.625
 2  complement  -139.111    3.668  285.558           0.581            0.302          0.375
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 1.667 times more support than its complement.</code></pre>
 <div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" tabindex="-1"></a><span class="fu">round</span>(results_3c<span class="sc">$</span>ratio.gw, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>           vs. H1 vs. complement
@@ -1678,13 +1665,13 @@ Note: BF.u denotes the Bayes factor of the hypothesis at hand versus the unconst
 <span id="cb75-2"><a href="#cb75-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb75-3"><a href="#cb75-3" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb75-4"><a href="#cb75-4" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -139.260    2.000  282.520           0.463            0.818          0.794
 2  complement  -139.111    3.500  285.222           0.537            0.182          0.206
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 3.862 times more support than its complement.</code></pre>
 <p>From the bain output, you can see (from BF.c) that the incorrect
 equality hypothesis <span class="math inline">\(H_1\)</span> is
@@ -1737,13 +1724,13 @@ Note: BF.u denotes the Bayes factor of the hypothesis at hand versus the unconst
 <span id="cb80-2"><a href="#cb80-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb80-3"><a href="#cb80-3" tabindex="-1"></a>results_12_N1000 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb80-4"><a href="#cb80-4" tabindex="-1"></a>results_12_N1000</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model     loglik  penalty     goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -1346.431    2.000  2696.861           0.045            0.818          0.175
 2  complement  -1343.380    3.500  2693.760           0.955            0.182          0.825
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 0.212 times more support than its complement.</code></pre>
 </div>
 </div>
@@ -1775,13 +1762,13 @@ Note: BF.u denotes the Bayes factor of the hypothesis at hand versus the unconst
 <span id="cb85-2"><a href="#cb85-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb85-3"><a href="#cb85-3" tabindex="-1"></a>results_12_N10000 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb85-4"><a href="#cb85-4" tabindex="-1"></a>results_12_N10000</span></code></pre></div>
-<pre><code>restriktor (0.5-20): generalized order-restricted information criterion: 
+<pre><code>restriktor (0.5-30): generalized order-restricted information criterion: 
 
 Results:
         model      loglik  penalty      goric  loglik.weights  penalty.weights  goric.weights
 1          H1  -13428.294    2.000  26860.588           0.000            0.818          0.000
 2  complement  -13411.461    3.500  26829.922           1.000            0.182          1.000
---- 
+---
 The order-restricted hypothesis &#39;H1&#39; has 0.000 times more support than its complement.</code></pre>
 <div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;">
 
