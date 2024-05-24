@@ -2,8 +2,10 @@
 # useDynLib("restriktor")
 importFrom("lavaan",
            lavParseModelString,
-           lav_constraints_parse,
+           #lav_constraints_parse,
+           lav_partable_constraints_def,
            lav_func_jacobian_complex,
+           lav_func_jacobian_simple,
            lav_partable_constraints_ciq,
            lav_partable_constraints_ceq,
            lav_matrix_vech_idx,
@@ -23,8 +25,17 @@ importFrom("lavaan",
            lavaan # conTestD
            )
 
+importFrom("glue",
+           glue)
+
+
 importFrom("mvtnorm",
-           rmvnorm, dmvnorm)
+           #rmvnorm, 
+           dmvnorm)
+
+# truncated multivariate normal
+importFrom("tmvtnorm",
+           rtmvnorm)
 
 importFrom("quadprog",
            solve.QP)
@@ -37,6 +48,11 @@ importFrom("MASS",
            psi.bisquare,
            psi.huber,
            ginv)
+
+importFrom("pbapply", 
+           pblapply,
+           pboptions)
+
 
 importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
@@ -51,7 +67,7 @@ importFrom("stats", coef, df.residual, dnorm, fitted,
            sd, start, terms, update, var, vcov,
            weighted.residuals, weights, gaussian, lm.fit,
            lm.wfit, mad, coefficients, family, logLik,
-           model.frame, anova, optimize, sigma, cov, dist) 
+           model.frame, anova, optimize, sigma, cov, dist, lm, uniroot) 
 
 importFrom("graphics", abline, axis, box, hist, par)
 
@@ -76,7 +92,7 @@ export("restriktor",
        "conTestC.restriktor", 
        "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
        "conTestD", "bootstrapD", 
-       "goric", 
+       "goric", "calculate_IC_weights",
        #"print.con_goric", "print.conTestLavaan",
        #"print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
@@ -85,7 +101,10 @@ export("restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot", "coef.con_goric", 
        #"summary.con_goric", 
-       "evSyn", "plot.evSyn"#,
+       "evSyn", "plot.evSyn",
+       "calculate_IC_weights", "calc_ICweights",
+       "print.goric_ICw"#,
+       #"benchmarks_ANOVA"
        #"benchmarks_goric"
        #"print.evSyn", 
        #"summary.evSyn",
@@ -128,7 +147,7 @@ S3method(conGLM, glm)
 S3method(conMLM, mlm)
 
 S3method(goric, default)
-S3method(goric, restriktor)
+#S3method(goric, restriktor)
 S3method(goric, lm)
 S3method(goric, lavaan)
 S3method(goric, numeric)
@@ -143,3 +162,5 @@ S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)
 S3method(print, summary.evSyn)
+
+S3method(print, goric_ICw)

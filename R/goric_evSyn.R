@@ -148,15 +148,15 @@ evSyn <- function(object, ...) {
   
   arguments <- list(...)
   
-  checkArguments <- function(args) {
-    pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
-    pm <- pmatch(names(args), pnames, nomatch = 0L)
-    if (any(pm == 0L)) { 
-      stop("Restriktor Error: ", names(args[which(pm == 0L)]), " invalid argument(s).")
-    }
-  }
-  
-  if (length(arguments)) checkArguments(arguments)
+  # checkArguments <- function(args) {
+  #   pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
+  #   pm <- pmatch(names(args), pnames, nomatch = 0L)
+  #   if (any(pm == 0L)) { 
+  #     stop("Restriktor Error: ", names(args[which(pm == 0L)]), " invalid argument(s).")
+  #   }
+  # }
+  # 
+  # if (length(arguments)) checkArguments(arguments)
   
   VCOV <- arguments$VCOV
   PT   <- arguments$PT
@@ -236,11 +236,11 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   
   # check if VCOV and hypotheses are both a non-empty list
-  if ( !is.list(VCOV) & length(VCOV) == 0 ) {
+  if ( !is.list(VCOV) && length(VCOV) == 0 ) {
     stop("Restriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
   } 
 
-  if ( !is.list(hypotheses) & length(hypotheses) == 0 ) {
+  if ( !is.list(hypotheses) && length(hypotheses) == 0 ) {
     stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  
   } 
   
@@ -308,7 +308,7 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   sequence[1] <- "Studies 1"
   rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   
-  if (NrHypos == 1 & comparison == "complement") {
+  if (NrHypos == 1 && comparison == "complement") {
     if (!is.null(element_hypo_names)) {
       element_hypo_names <- c(element_hypo_names, "Complement")
       hnames_idx <- element_hypo_names != ""
@@ -338,7 +338,7 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
     hnames <- element_hypo_names
     
     hypotheses <- lapply(hypotheses, function(h) {
-      names(h)[1:length(hnames)] <- hnames 
+      names(h)[seq_len(length(hnames))] <- hnames 
       return(h)
     })
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
@@ -369,7 +369,8 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   for (s in 1:S) {
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
-                       type = 'gorica', comparison = comparison)
+                       type = 'gorica', comparison = comparison,
+                       ...)
 
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
@@ -450,10 +451,11 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   rownames(Final.ratio.GORICA.weights) <- hnames
   
   # Output
-  if (NrHypos == 1 & comparison == "complement") {
+  if (NrHypos == 1 && comparison == "complement") {
     colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   } else if (comparison == "none") {
+    #colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   } else { 
     # unconstrained
@@ -493,7 +495,7 @@ evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added", "
   type <- match.arg(type)
   
   # check if PT is a non-empty list
-  if ( !is.list(PT) & length(PT) == 0 ) {
+  if ( !is.list(PT) && length(PT) == 0 ) {
     stop("Restriktor ERROR: PT must be a list of penalty weights.", call. = FALSE)  
   } 
   
@@ -769,7 +771,7 @@ evSyn_gorica.list <- function(object, ..., type = c("equal", "added", "average")
 print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # added or equal approach
-  type <- x$type
+  #type <- x$type
   
   cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
               packageDescription("restriktor", fields = "Version"), x$type))

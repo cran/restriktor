@@ -126,7 +126,7 @@ expand_compound_constraints <- function(hyp) {
 # function taken from 'bain' package 
 expand_parentheses <- function(hyp) {
   parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
-  if (!parenth_locations[1] == -1 & !grepl("abs\\(.*\\)", hyp) ) {
+  if (!parenth_locations[1] == -1 && !grepl("abs\\(.*\\)", hyp) ) {
     if (length(parenth_locations) %% 2 > 0) stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
     expanded_contents <- strsplit(substring(hyp, (parenth_locations[1]+1), (parenth_locations[2]-1)), ",")[[1]]
     if (length(parenth_locations) == 2){
@@ -152,46 +152,195 @@ format_numeric <- function(x, digits = 3) {
   }
 }
 
-# compute_weights_ratioWeights <- function(x) {
-#   IC <- 2*x
-#   minIC <- min(IC)
-#   weights <- exp(-0.5 * (IC - minIC)) / sum(exp(-0.5 * (IC - minIC)))
-#   ratio_weights <- weights %*% t(1/weights)
-# 
-#   out <- list(weights = weights, ratio_weights = ratio_weights)
-# 
-#   return(out)
-# }
 
-# 
-# remove_linear_dependent_rows_matrix <- function(Amat, bvec) {
-#   ## remove any linear dependent rows from the constraint matrix. Amat must be of full row rank.
-#   # remove any zero vectors
-#   allZero.idx <- rowSums(abs(Amat)) == 0
-#   Amat <- Amat[!allZero.idx, , drop = FALSE]
-#   bvec <- bvec[!allZero.idx]
-#   # what is the rank of Amat
-#   rank <- qr(Amat)$rank
-#   # decompose Amat using svd
-#   s <- svd(Amat)
-#   # continue untill Amat is of full-row rank
-#   while (rank != length(s$d)) {
-#     # check which singular values are zero
-#     zero.idx <- which(zapsmall(s$d) <= 1e-16)
-#     # remove linear dependent rows and reconstruct the constraint matrix
-#     Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-#     # zapping small ones to zero
-#     Amat <- zapsmall(Amat)
-#     bvec <- bvec[-zero.idx]
-#     s <- svd(Amat)
-#   }
-#  
-#   OUT <- list(Amat, bvec)
-#   
-#   OUT
-# }
-# 
+calculate_model_comparison_metrics <- function(x) {
+  modelnames <- as.character(x$model)
+  ## Log-likelihood
+  LL = -2 * x$loglik
+  delta_LL = LL - min(LL)
+  loglik_weights = exp(0.5 * -delta_LL) / sum(exp(0.5 * -delta_LL))
+  loglik_rw  <- loglik_weights %*% t(1/loglik_weights)
+  diag(loglik_rw) = 1
+  
+  ## penalty
+  penalty_weights = exp(-x$penalty) / sum(exp(-x$penalty))
+  penalty_rw = penalty_weights %*% t(1/penalty_weights)
+  diag(penalty_rw) = 1
+  
+  ## goric
+  delta_goric = x$goric - min(x$goric)
+  goric_weights = exp(0.5 * -delta_goric) / sum(exp(0.5 * -delta_goric))
+  goric_rw = goric_weights %*% t(1/goric_weights)
+  diag(goric_rw) = 1
+  
+  rownames(goric_rw)   = modelnames
+  rownames(penalty_rw) = modelnames
+  rownames(loglik_rw)  = modelnames
+  colnames(goric_rw)   = paste0("vs. ", modelnames)
+  colnames(penalty_rw) = paste0("vs. ", modelnames)
+  colnames(loglik_rw)  = paste0("vs. ", modelnames)
+  
+  out <- list(loglik_weights  = loglik_weights, 
+              penalty_weights = penalty_weights,
+              goric_weights   = goric_weights,
+              loglik_rw       = loglik_rw,
+              penalty_rw      = penalty_rw,
+              goric_rw        = goric_rw)
+  
+  return(out)
+}
+
+# this function is called from the goric_benchmark_anova() function
+parallel_function <- function(i, samplesize, var.e, nr.iter, means_pop, 
+                              hypos, PrefHypo, object, n.coef, sample, 
+                              control, ...) {  
+  # Sample residuals
+  epsilon <- rnorm(sum(samplesize), sd = sqrt(var.e))
+  # Generate data
+  sample$y <- as.matrix(sample[, 2:(1 + n.coef)]) %*% matrix(means_pop, 
+                                                             nrow = n.coef) + epsilon
+  df <- data.frame(y = sample$y, sample[, 2:(1 + n.coef)])
+  
+  # Obtain fit
+  fit <- lm(y ~ 0 + ., data = df)
+  # GORICA or GORICA depending on what is done in data
+  results.goric <- goric(fit,
+                         hypotheses = hypos,
+                         comparison = object$comparison,
+                         type = object$type,
+                         control = control, 
+                         ...)
+  
+  # Return the relevant results
+  list(
+    #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
+    goric = results.goric$result[PrefHypo, 7],
+    gw    = results.goric$ratio.gw[PrefHypo, ],
+    lw    = results.goric$ratio.lw[PrefHypo, ],
+    ld    = (results.goric$result$loglik[PrefHypo] - results.goric$result$loglik)
+  )
+}
 
 
-#rankifremoved <- sapply(1:ncol(Amat), function (x) qr(Amat[-x, ])$rank)
-#which(rankifremoved == max(rankifremoved))
+
+# Function to identify list and corresponding messages
+identify_messages <- function(x) {
+  messages_info <- list()
+  hypo_messages <- names(x$objectList)
+  for (object_name in hypo_messages) {
+    if (length(x$objectList[[object_name]]$messages) > 0) {
+      messages <- names(x$objectList[[object_name]]$messages)
+      messages_info[[object_name]] <- messages
+    } else {
+      messages_info[[object_name]] <- "No messages"
+    }
+  }
+  return(messages_info)
+}
+
+
+detect_range_restrictions <- function(Amat) {
+  n <- nrow(Amat)
+  range_restrictions <- matrix(0, ncol = 2, nrow = n)
+  
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      if (all(Amat[i, ] == -Amat[j, ])) {
+        range_restrictions[i, ] <- c(i, j)
+      }
+    }
+  }
+  
+  range_restrictions <- range_restrictions[range_restrictions[, 1] != 0, , drop = FALSE]
+  return(range_restrictions)
+}
+
+
+
+PT_Amat_meq <- function(Amat, meq) {
+  # check for range-restrictions and treat them as equalities
+  PT_meq  <- meq
+  # check for linear dependence
+  RREF <- GaussianElimination(t(Amat)) # qr(Amat)$rank
+  # remove linear dependent rows
+  PT_Amat <- Amat[RREF$pivot, , drop = FALSE] 
+  
+  if (nrow(Amat) > 1) {
+    # check for range restrictions, e.g., -1 < beta < 1
+    idx_range_restrictions <- detect_range_restrictions(Amat)
+    # range restrictions are treated as equalities for computing PT (goric)
+    n_range_restrictions <- nrow(idx_range_restrictions)
+    PT_meq <- meq + n_range_restrictions
+    # reorder PT_Amat: ceq first, ciq second, needed for QP.solve()
+    meq_order_idx <- RREF$pivot %in% c(idx_range_restrictions)
+    PT_Amat <- rbind(PT_Amat[meq_order_idx, ], PT_Amat[!meq_order_idx, ])
+  }
+  
+  return(list(PT_meq = PT_meq, PT_Amat = PT_Amat, RREF = RREF))
+}
+
+
+# correct misspecified constraints of format e.g., x1 < 1 & x1 < 2.
+# x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
+# since the redundant matrix is not full row-rank the slower boot method is used. 
+remove_redundant_constraints <- function(constraints, rhs) {
+  df <- data.frame(constraints, rhs)
+  df <- df[order(df$rhs, decreasing = TRUE),]  
+  unique_constraints <- !duplicated(df[, -ncol(df)])
+  df_reduced <- df[unique_constraints,]
+  rhs <- df_reduced$rhs
+  row.names(df_reduced) <- NULL
+  colnames(df_reduced) <- NULL
+  list(constraints = as.matrix(df_reduced[, -ncol(df_reduced)]), rhs = rhs) 
+}
+
+
+
+calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
+                                 verbose, ...) {
+  wt.bar <- NA
+  if (nrow(Amat) == meq) {
+    # equality constraints only
+    wt.bar <- rep(0L, ncol(VCOV) + 1)
+    wt.bar.idx <- ncol(VCOV) - qr(Amat)$rank + 1
+    wt.bar[wt.bar.idx] <- 1
+  } else if (all(c(Amat) == 0)) { 
+    # unrestricted case
+    wt.bar <- c(rep(0L, ncol(VCOV)), 1)
+  } else if (mix_weights == "boot") { 
+    # compute chi-square-bar weights based on Monte Carlo simulation
+    wt.bar <- con_weights_boot(VCOV = VCOV,
+                               Amat = Amat, 
+                               meq  = meq, 
+                               R    = ifelse(is.null(control$mix_weights_bootstrap_limit), 
+                                             1e5L, control$mix_weights_bootstrap_limit),
+                               seed = seed,
+                               convergence_crit = ifelse(is.null(control$convergence_crit), 
+                                                         1e-03, control$convergence_crit),
+                               chunk_size = ifelse(is.null(control$chunk_size), 
+                                                   5000L, control$chunk_size),
+                               verbose = verbose, ...)
+    attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit 
+  } else if (mix_weights == "pmvnorm" && meq < nrow(Amat)) {
+    # compute chi-square-bar weights based on pmvnorm
+    wt.bar <- rev(con_weights(Amat %*% VCOV %*% t(Amat), meq = meq))
+    
+    # Check if wt.bar contains NaN values
+    if (any(is.nan(wt.bar))) {
+      mix_weights <- "boot"
+      wt.bar <- con_weights_boot(VCOV = VCOV,
+                                 Amat = Amat, 
+                                 meq  = meq, 
+                                 R    = ifelse(is.null(control$mix_weights_bootstrap_limit), 
+                                               1e5L, control$mix_weights_bootstrap_limit),
+                                 seed = seed,
+                                 convergence_crit = ifelse(is.null(control$convergence_crit), 
+                                                           1e-03, control$convergence_crit),
+                                 chunk_size = ifelse(is.null(control$chunk_size), 
+                                                     5000L, control$chunk_size),
+                                 verbose = verbose, ...)
+      attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit   
+    } 
+  }
+  return(wt.bar)
+}

@@ -1,35 +1,24 @@
-\name{conTestLRT}
-\alias{conTestLRT}
-\alias{conTestLRT.conLM}
-\alias{conTestLRT.conGLM}
-\alias{conTestLRT.conMLM}
+\name{conTestWald}
+\alias{conTestWald}
+\alias{conTestWald.conRLM}
 
-\title{Likelihood-ratio-bar test for iht}
-\description{\code{conTestLRT} tests linear equality and/or 
-inequality restricted hypotheses for linear models by LR-tests. It can be 
-used directly and is called by the \code{conTest} function if \code{test = "LRT"}.
+\title{Wald-bar test for robust iht}
+\description{\code{conTestWald} tests linear equality and/or 
+inequality restricted hypotheses for linear models by Wald-tests. 
+It can be used directly and is called by the \code{conTest} function 
+if \code{test = "Wald"}.
 }
 
 \usage{
 
-\method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, 
+\method{conTestWald}{conRLM}(object, type = "A", neq.alt = 0, 
            boot = "no", R = 9999, p.distr = rnorm,  
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
-           
-\method{conTestLRT}{conGLM}(object, type = "A", neq.alt = 0, 
-            boot = "no", R = 9999, p.distr = rnorm,  
-            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-            verbose = FALSE, control = NULL, \dots)           
-
-\method{conTestLRT}{conMLM}(object, type = "A", neq.alt = 0, 
-            boot = "no", R = 9999, p.distr = rnorm,  
-            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-            verbose = FALSE, control = NULL, \dots)                     
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM}, \code{conMLM} or \code{conGLM}.}  
+  \item{object}{an object of class \code{conRLM}.} 
   
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}
@@ -49,15 +38,15 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
   Instead of computing the p-value via simulation, the p-value
   can also be computed using the chi-bar-square weights. If 
   \code{"no"}, the p-value is computed based on the weights 
-  obtained via simulation (\code{mix.weights = "boot"}) or using the 
-  multivariate normal distribution function (\code{mix.weights = "pmvnorm"}).
+  obtained via simulation (\code{mix_weights = "boot"}) or using the 
+  multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
   Note that, these weights are already available in the restriktor objected and
   do not need to be estimated again. However, there are two exception for objects 
   of class \code{conRLM}, namely for computing the p-value for the robust 
   \code{test} = \code{"Wald"} and the robust \code{"score"}. In these cases 
   the weights need to be recalculated.
   }
-
+  
   \item{R}{integer; number of bootstrap draws for \code{boot}. 
   The default value is set to 9999.}
   
@@ -68,8 +57,7 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
   a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 
   distribution. The random generation distributional parameters will 
   be passed in via \ldots.}
-  
-  
+
   \item{parallel}{the type of parallel operation to be used 
   (if any). If missing, the default is set "no".}
   
@@ -96,9 +84,21 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
       mlm (not yet supported). 
       \item \code{tol} numerical tolerance value. Estimates 
       smaller than \code{tol} are set to 0.
-    }
+      \item \code{chunk_size} the chi-bar-square weights are computed for samples 
+      of size \code{chunk_size = 5000L}. This process is repeated iteratively 
+      until the weights converges (see \code{convergenge_crit}) or the maximum 
+      is reached, i.e., mix_weights_bootstrap_limit.
+      \item \code{convergence_crit} the convergence criterion for the iterative 
+     process. The default is 1e-03.}
   }
-  \item{\dots}{additional arguments to be passed to the p.distr function.}
+  
+  \item{\dots}{Additional arguments that can be passed to the p.distr function, 
+  or arguments for the restriktor or iht function. Consider, for example, the 
+  mix_weights_bootstrap_limit argument, which specifies the maximum number of 
+  bootstrap draws (default is 100.000) used to compute the chi-bar-square weights. 
+  If mix_weights_bootstrap_limit is set to 100.000, then in each iteration, a 
+  sample of size 5000 is added until the weights converge, or the maximum limit 
+  is reached.}
 }
 
 \details{The following hypothesis tests are available:
@@ -145,29 +145,37 @@ F-distributions.
   \item{Amat}{constraints matrix.}
   \item{bvec}{vector of right-hand side elements.}
   \item{meq}{number of equality constraints.}
-  \item{meq_alt}{same as input neq.alt.}
+  \item{meq.alt}{same as input neq.alt.}
   \item{iact}{number of active constraints.}
   \item{type}{same as input.}
   \item{test}{same as input.}
   \item{Ts}{test-statistic value.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b_eqrestr}{equality restricted regression coefficients. 
+  \item{b.eqrestr}{equality restricted regression coefficients. 
   Only available for \code{type = "A"} and \code{type = "global"}, 
   else \code{b.eqrestr = NULL}.}
-  \item{b_unrestr}{unrestricted regression coefficients.}
-  \item{b_restr}{restricted regression coefficients.}
-  \item{b_restr_alt}{restricted regression coefficients under HA 
+  \item{b.unrestr}{unrestricted regression coefficients.}
+  \item{b.restr}{restricted regression coefficients.}
+  \item{b.restr.alt}{restricted regression coefficients under HA 
   if some equality constraints are maintained. Only available for 
-  \code{type = "B"} else \code{b_restr_alt = NULL}.}
+  \code{type = "B"} else \code{b.restr.alt = NULL}.}
   \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2_org}{unrestricted R-squared, not available for objects of class \code{conGLM}.}
-  \item{R2_reduced}{restricted R-squared, not available for objects of class \code{conGLM}.}
+  \item{R2.org}{unrestricted R-squared, not available for objects of class \code{conGLM}.}
+  \item{R2.reduced}{restricted R-squared, not available for objects of class \code{conGLM}.}
   \item{boot}{same as input.}
-  \item{model_org}{original model.}
+  \item{model.org}{original model.}
 }
 
 \references{
+Silvapulle, M. (1992b). Robust Wald-Type Tests of One-Sided Hypotheses 
+in the Linear Model. \emph{Journal of the American Statistical Association}, 
+\bold{87}, 156--161.
+
+Silvapulle, M. (1996) Robust bounded influence tests against one-sided hypotheses
+in general parametric models. \emph{Statistics and probability letters}, 
+\bold{31}, 45--50.
+
 Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
 Statistical Inference}. Wiley, New York
 
@@ -182,6 +190,7 @@ Statistical Inference}. Wiley, New York
 }
 
 \examples{
+library(MASS)
 ## example 1:
 # the data consist of ages (in months) at which an 
 # infant starts to walk alone.
@@ -189,25 +198,26 @@ Statistical Inference}. Wiley, New York
 # prepare data
 DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
-# fit unrestricted linear model
-fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
+# fit unrestricted robust linear model
+fit1.rlm <- rlm(Age ~ -1 + Group, data = DATA1, method = "MM")
 
 # the variable names can be used to impose constraints on
 # the corresponding regression parameters.
-coef(fit1_lm)
+coef(fit1.rlm)
 
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-myConstraints1 <- ' GroupActive  < GroupPassive < GroupNo '
+myConstraints1 <- ' GroupActive  < GroupPassive; 
+                    GroupPassive < GroupNo '
 
-iht(fit1_lm, myConstraints1, test = "LRT")
+iht(fit1.rlm, myConstraints1, test = "Wald")
 
 
 # another way is to first fit the restricted model
-fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
+fit.restr1 <- restriktor(fit1.rlm, constraints = myConstraints1)
 
-iht(fit_restr1, test = "LRT")
+iht(fit.restr1, test = "Wald")
 
 
 # Or in matrix notation.
@@ -216,39 +226,39 @@ Amat1 <- rbind(c(-1, 0,  1),
 myRhs1 <- rep(0L, nrow(Amat1)) 
 myNeq1 <- 0
 
-iht(fit1_lm, constraints = Amat1, test = "LRT",
-    rhs = myRhs1, neq = myNeq1)
+iht(fit1.rlm, constraints = Amat1, test = "Wald", rhs = myRhs1, neq = myNeq1)
+
 
 #########################
 ## Artificial examples ##
 #########################
 # generate data
-n <- 10
+n <- 30
 means <- c(1,2,1,3)
 nm <- length(means)
 group <- as.factor(rep(1:nm, each = n))
 y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
-# fit unrestricted linear model
-fit2_lm <- lm(y ~ -1 + group, data = DATA2)
-coef(fit2_lm)
+# fit unrestricted robust linear model
+fit2.rlm <- rlm(y ~ -1 + group, data = DATA2, method = "MM")
+coef(fit2.rlm)
 
 ## example 2: increasing means
 myConstraints2 <- ' group1 < group2 < group3 < group4 '
 
-# compute F-test for hypothesis test Type A and compute the tail 
+# compute Wald-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-iht(fit2_lm, constraints = myConstraints2, type = "A", test = "LRT",
-    boot = "parametric", R = 9)
+iht(fit2.rlm, constraints = myConstraints2, type = "A", 
+    test = "Wald", boot = "parametric", R = 9)
 
-# or fit restricted linear model
-fit2_con <- restriktor(fit2_lm, constraints = myConstraints2)
 
-iht(fit2_con, test = "LRT")
+# or fit restricted robust linear model
+fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2)
 
+iht(fit2.con, test = "Wald")
 
 # increasing means in matrix notation.
 Amat2 <- rbind(c(-1, 1, 0, 0),
@@ -257,25 +267,25 @@ Amat2 <- rbind(c(-1, 1, 0, 0),
 myRhs2 <- rep(0L, nrow(Amat2)) 
 myNeq2 <- 0
 
-iht(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-    type = "A", test = "LRT", boot = "parametric", R = 9)
+iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+    type = "A", test = "Wald", boot = "parametric", R = 9)
+            
 
 ## example 3:
 # combination of equality and inequality constraints.
 myConstraints3 <- ' group1  = group2
                     group3  < group4 '
 
-iht(fit2_lm, constraints = myConstraints3, type = "B", 
-    test = "LRT", neq.alt = 1)
+iht(fit2.rlm, constraints = myConstraints3, type = "B", test = "Wald", neq.alt = 1)
 
-# fit resticted model and compute model-based bootstrapped 
+# fit robust resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit3_con <- restriktor(fit2_lm, constraints = myConstraints3, 
+fit3.con <- restriktor(fit2.rlm, constraints = myConstraints3, 
                        se = "boot.model.based", B = 9)
-iht(fit3_con, type = "B", test = "LRT", neq.alt = 1)
+iht(fit3.con, type = "B", test = "Wald", neq.alt = 1)
 
 
 ## example 4:
@@ -292,16 +302,16 @@ y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10)
 DATA3 = data.frame(cbind(y, X, Z))
 
 # fit linear model with interaction
-fit4_lm <- lm(y ~ X*Z, data = DATA3)
+fit3.rlm <- rlm(y ~ X*Z, data = DATA3, method = "MM")
 
 # constraint syntax
 myConstraints4 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-iht(fit4_lm, constraints = myConstraints4, test = "LRT")
+iht(fit3.rlm, constraints = myConstraints4, test = "Wald")
 
 # or
-fit4_con <- restriktor(fit4_lm, constraints = ' AVE := X + 16.86137*X.Z; 
-                                                AVE > 0 ')
-iht(fit4_con, test = "LRT")
+fit3.con <- restriktor(fit3.rlm, constraints = ' AVE := X + 16.86137*X.Z; 
+                                                 AVE > 0 ')
+iht(fit3.con, test = "Wald")
 }

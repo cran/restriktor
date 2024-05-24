@@ -3,6 +3,5 @@
                       fields="Version")
     packageStartupMessage("This is ",paste(pkgname, version))
     #packageStartupMessage(pkgname, " is BETA software! Please report any bugs.")
-    packageStartupMessage(pkgname, " Please report any bugs.")
+    packageStartupMessage("Please report any bugs.")
 }
-

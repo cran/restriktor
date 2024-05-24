@@ -1,7 +1,6 @@
 \name{goric}
 \alias{goric}
 \alias{goric.default}
-\alias{goric.restriktor}
 \alias{goric.lm}
 \alias{goric.numeric}
 \alias{goric.lavaan}
@@ -21,39 +20,35 @@ comparable to the Akaike weights.
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", 
-      auto.bound = FALSE, debug = FALSE)
-
-\method{goric}{restriktor}(object, ..., hypotheses = NULL,
-      comparison = "unconstrained", type = "goric", 
-      auto.bound = NULL, debug = FALSE)
+      control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric",
       missing = "none", auxiliary = c(), emControl = list(),
-      auto.bound = NULL, debug = FALSE)
+      debug = FALSE)
 
 \method{goric}{numeric}(object, ..., hypotheses = NULL,
       VCOV = NULL, comparison = "unconstrained",
       type = "gorica", sample.nobs = NULL,
-      auto.bound = NULL, debug = FALSE)
+      debug = FALSE)
 
 \method{goric}{lavaan}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "gorica",
-      standardized = FALSE, auto.bound = NULL, debug = FALSE)
+      standardized = FALSE, debug = FALSE)
 
 \method{goric}{CTmeta}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "gorica", 
-      sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
+      sample.nobs = NULL, debug = FALSE)
 
 \method{goric}{rma}(object, ..., hypotheses = NULL,
       VCOV = NULL, comparison = "unconstrained", type = "gorica", 
-      sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
+      sample.nobs = NULL, debug = FALSE)
 
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), 
-      threshold = 3, \dots)
+\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
+      %threshold = 3, \dots)
 
 \method{coef}{con_goric}(object, \dots)
 }
@@ -62,7 +57,6 @@ comparable to the Akaike weights.
   \item{object}{an object containing the outcome of an unconstrained statistical analysis.
   Currently, the following objects can be processed:
   \itemize{
-    \item a fitted object of class restriktor. 
     \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
     \item a numeric vector containing the unconstrained estimates resulting from any 
     statistical analysis.
@@ -74,11 +68,19 @@ comparable to the Akaike weights.
   
   \item{x}{an object of class \code{con_goric}.}
 
-  \item{\ldots}{this depends on the class of the object. If object is of class 
-  restriktor, further objects of class restriktor can be passed. Note that, the 
+  \item{\ldots}{this depends on the class of the object. Note that, the 
   objects have to be of the same class. If object is of class \code{lavaan}, the 
   standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
-  See details for more information.}
+  See details for more information.
+  
+  \emph{Options for calculating the chi-bar-square weights:}
+
+  Parameters passed to the truncated multivariate normal distribution. By default, 
+  restriktor (i.e. \code{con_weights_boot} function) uses no truncation points 
+  for calculating the chi-bar-square weights, which renders to the multivariate 
+  normal distribution. See the manual page of the \code{rtmvnorm} function from 
+  the \pkg{rtmvnorm} to see how to specify a truncated mvnorm distribution and 
+  the possible arguments.}
   
   \item{hypotheses}{a named list; Please note that the hypotheses argument in the given 
   context serves the same purpose as the constraints argument utilized in the 
@@ -135,19 +137,25 @@ comparable to the Akaike weights.
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.}
   
-  \item{threshold}{integer, The threshold determines the sensitivity in identifying 
-  hypotheses with similar log-likilihood values. A smaller threshold will identify 
-  only the most similar hypotheses, while a larger threshold will include more 
-  hypotheses with a broader range of similarity. Be cautious with equal or nearly 
-  equal log-likelihood values as they might indicate support for the boundary of 
-  hypotheses or overlap between hypotheses. More details can be found in the Vignette.}
-  
-  \item{auto.bound}{not used yet.}
-  
   \item{digits}{the number of significant digits to use when printing.}
   
   \item{debug}{if TRUE, debugging information is printed out.}
   
+  Control options for calculating the chi-bar-square weights:
+  \item{control}{
+    \itemize{
+      \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
+      of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
+      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
+      \code{mix_weights_bootstrap_limit}.
+      
+      \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
+      The default value is set to 1e5.
+      
+      \item \code{convergence_crit} the convergence criterion for the iterative bootstrap
+      process. Default is 1e-03.
+    }
+  }
   \item{brief}{if TRUE, a short overview is printed.}
 }
 
@@ -163,8 +171,7 @@ comparable to the Akaike weights.
   Hc can be computed as competing hypothesis. The complement is defined 
   as Hc = not H1.
   
-  If the object(s) is of class restriktor the hypotheses (constraints) are 
-  inherited. Otherwise, the hypothesis syntax can be parsed via the hypotheses argument. 
+  The hypothesis syntax can be parsed via the hypotheses argument. 
   If the object is an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, 
   then the hypotheses can be specified in two ways, see \code{\link{restriktor}}. Note 
   that if the hypotheses are written in matrix notation, then the hypotheses
@@ -176,9 +183,9 @@ comparable to the Akaike weights.
   specified in two ways, see \code{\link{restriktor}}. For examples, see below.
   
   To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-  probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
+  probabilities) must be computed. If \code{"mix_weights = "pmvnorm" "} (default), 
   the chi-bar-square weights are computed based on the multivariate normal distribution 
-  function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
+  function with additional Monte Carlo steps. If \code{"mix_weights = "boot" "}, the 
   chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
   
   
@@ -292,13 +299,6 @@ H3 <- "GroupPassive = 0; GroupPassive < GroupNo"
 # object is of class lm
 goric(fit1.lm, hypotheses = list(H1 = H1, H2 = H2, H3 = H3))
 
-# same result, but using objects of class restriktor
-fit1.con <- restriktor(fit1.lm, constraints = H1)
-fit2.con <- restriktor(fit1.lm, constraints = H2)
-fit3.con <- restriktor(fit1.lm, constraints = H3)
-
-goric(fit1.con, fit2.con, fit3.con)
-
 # same result, but using the parameter estimates and covariance matrix as input
 # Note, that in case of a numeric input only the gorica(c) can be computed. 
 goric(coef(fit1.lm), VCOV = vcov(fit1.lm), hypotheses = list(H1 = H1, H2 = H2, H3 = H3))
@@ -336,10 +336,4 @@ h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
 goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
-
-## use parallel processing for computing the level probabilities (i.e., mixing weights)
-\dontrun{
-goric(fit.lm, hypotheses = list(h1), comparison = "complement",
-      mix.weights = "boot", parallel = "snow", ncpus = 8, mix.bootstrap = 99999)
-}
 }

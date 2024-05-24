@@ -1,6 +1,3 @@
-## to do
-# gebruik con_goric() functie om LL, Penalty and Goric te berekenen.
-
 summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc", 
                                level = 0.95, 
                                goric = "goric", ...) {
@@ -14,14 +11,14 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   stopifnot(goric %in% c("goric", "goricc", "gorica", "goricac", "none"))
   
   # bty = "stud" needs bootstrap variances
-  if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
+  if (bootCIs && !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
       stop("Restriktor ERROR: studentized intervals not implemented.")
     } else {
       stop("bty is invalid.")
     }
   }
-  if (bootCIs & (level < 0.5 | level > 1)) {
+  if (bootCIs && (level < 0.5 || level > 1)) {
     stop("invalid confidence level")
   }
   
@@ -33,6 +30,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   r <- weighted.residuals(z)
   
   ans <- z[c("call", if (!is.null(z$weights)) "weights")]
+  #ans <- list()
   ans$model.org <- z$model.org
   
   se.type <- z$se
@@ -74,7 +72,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   } else if (bootCIs && (ans$se.type %in% c("boot.model.based", "boot.standard"))) {
       cis <- matrix(0, length(z$b.restr), 2)
       colnames(cis) <- c("lower", "upper")
-      for (i in 1:length(z$b.restr)) {
+      for (i in seq_len(length(z$b.restr))) {
         if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
           cis[i, ] <- boot.ci(z$bootout, conf = level,
                               type = bty, index = i)[[bty]][4:5]
@@ -98,7 +96,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
         se.def <- apply(bootout.def, 1, function(x) sd(x))
         cis.def <- matrix(0, length(b.def), 2)
         colnames(cis) <- c("lower", "upper")
-        for (i in 1:length(b.def)) {
+        for (i in seq_len(length(b.def))) {
           if (!bty %in% c("norm", "perc")) { 
             cis.def[i, ] <- boot.ci(z$bootout, conf = level, type = bty, 
                                     t0 = b.def[i], t = bootout.def[i,])[[bty]][4:5]
@@ -171,15 +169,18 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
   wt.bar <- z$wt.bar
   ## compute goric
+  ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
+  ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
   if (goric != "none" && !(attr(wt.bar, "method") == "none")) {
-    ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
-    ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
+    Amat_meq_PT <- PT_Amat_meq(Amat, meq)
+    ans$PT_Amat <- Amat_meq_PT$PT_Amat
+    ans$PT_meq  <- Amat_meq_PT$PT_meq
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
     if (goric %in% c("goric", "gorica")) {
-      PT <- penalty_goric(Amat        = Amat, 
-                          meq         = meq, 
+      PT <- penalty_goric(Amat        = ans$PT_Amat,  
+                          meq         = ans$PT_meq, 
                           LP          = wt.bar, 
                           correction  = FALSE, 
                           sample.nobs = NULL)
@@ -187,8 +188,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
         PT <- PT - 1 
       }
     } else if (goric %in% c("goricc", "goricac")) {
-      PT <- penalty_goric(Amat        = Amat, 
-                          meq         = meq, 
+      PT <- penalty_goric(Amat        = ans$PT_Amat, 
+                          meq         = ans$PT_meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
                           sample.nobs = length(r))
@@ -214,7 +215,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
         PT <- PT - 1
       }
-      ans$goric <- -2*ll / 1 + 2*PT
+      ans$goric <- -2*ll / (1 + 2*PT)
+      #-2*(llm - PTm)
     }
     attr(ans$goric, "type")    <- goric
     attr(ans$goric, "penalty") <- PT

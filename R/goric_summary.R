@@ -1,6 +1,5 @@
 summary.con_goric <- function(object, brief = TRUE, 
-                              digits = max(3, getOption("digits") - 4), 
-                              threshold = 3, ...) {
+                              digits = max(3, getOption("digits") - 4), ...) {
   
   x <- object
   type <- x$type
@@ -23,53 +22,97 @@ summary.con_goric <- function(object, brief = TRUE,
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   
   if (type == "goric") {
-    cat("generalized order-restricted information criterion: \n")
+    cat("generalized order-restricted information criterion: \n\n")
   } else if (type == "gorica") {
-    cat("generalized order-restricted information criterion approximation:\n")
+    cat("generalized order-restricted information criterion approximation:\n\n")
   } else if (type == "goricc") {
-    cat("small sample generalized order-restricted information criterion:\n")
+    cat("small sample generalized order-restricted information criterion:\n\n")
   } else if (type == "goricac") {
-    cat("small sample generalized order-restricted information criterion approximation:\n")
+    cat("small sample generalized order-restricted information criterion approximation:\n\n")
   }
   
-  wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
-  # we need a check if the hypothesis is equalities only
-  ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
-  wt_bar <- as.logical(wt_bar * !ceq_only)
+  # wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
+  # # we need a check if the hypothesis is equalities only
+  # ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
+  # wt_bar <- as.logical(wt_bar * !ceq_only)
+  # 
+  # if (sum(wt_bar) > 0) {
+  #   wt_method_boot <- x$objectList[wt_bar]
+  #   wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "total_bootstrap_draws"))
+  #   wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
+  #   max_nchar <- max(nchar(names(wt_method_boot)))
+  #   
+  #   len <- length(wt_method_boot)
+  #   if (len > 0) { 
+  #     cat("\n")
+  #     cat("Bootstrap-based penalty term calculation:\n")
+  #     cat("  Number of bootstrap draws", wt_bootstrap_draws[1], "\n")
+  #     for (i in 1:len) {
+  #       cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
+  #     }
+  #   }
+  # }
   
-  if (sum(wt_bar) > 0) {
+  wt_bar_attributes <- lapply(x$objectList, function(obj) {
+    list(
+      method = attr(obj$wt.bar, "method"),
+      converged = attr(obj$wt.bar, "converged"),
+      total_draws = attr(obj$wt.bar, "total_bootstrap_draws"),
+      errors = attr(obj$wt.bar, "error.idx")
+    )
+  })
+  
+  # Compute indicators
+  wt_bar <- vapply(wt_bar_attributes, function(attr) attr$method == "boot", logical(1))
+  ceq_only <- vapply(x$objectList, function(obj) nrow(obj$constraints) == obj$neq, logical(1))
+  wt_bar <- wt_bar & !ceq_only
+  
+  if (any(wt_bar)) {
+    wt_bar_attributes <- wt_bar_attributes[wt_bar]
     wt_method_boot <- x$objectList[wt_bar]
-    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
-    wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
     max_nchar <- max(nchar(names(wt_method_boot)))
     
-    len <- length(wt_method_boot)
-    if (len > 0) { 
-      cat("\n")
-      cat("Bootstrap-based penalty term calculation:\n")
-      cat("  Number of requested bootstrap draws", wt_bootstrap_draws[1], "\n")
-      for (i in 1:len) {
-        cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
+    # Summarize bootstrap information
+    bootstrap_summary <- vapply(wt_bar_attributes, function(attr) {
+      successful_draws <- attr$total_draws - length(attr$errors)
+      paste0(successful_draws, ifelse(attr$converged, " (Converged)", " (Not converged)"))
+    }, character(1))
+    
+    converged <- vapply(wt_bar_attributes, function(attr) attr$converged, logical(1))
+    total_bootstrap_draws <- vapply(wt_bar_attributes, function(attr) attr$total_draws, integer(1))
+    wt_bootstrap_errors <- sapply(wt_bar_attributes, function(attr) attr$errors)
+    
+    if (length(wt_method_boot) > 0) {
+      #cat("\n")
+      successful_draws <- total_bootstrap_draws - sapply(wt_bootstrap_errors, length)
+      has_errors <- vapply(wt_bootstrap_errors, function(errors) length(errors) > 0, logical(1))
+      not_all_converged <- !all(converged)
+      not_all_draws_successful <- !all(successful_draws == total_bootstrap_draws)
+      
+      if (any(has_errors) || not_all_converged) { 
+        if (not_all_draws_successful || not_all_converged) {
+          cat("Bootstrap-based penalty term calculation:\n")
+          cat("  Number of bootstrap draws:", sapply(wt_bar_attributes, `[[`, "total_draws"), "\n")
+          for (i in seq_along(bootstrap_summary)) {
+            cat(sprintf("  Number of successful bootstrap draws for %*s: %s\n", 
+                        max_nchar, names(wt_method_boot)[i], bootstrap_summary[i]))
+          }
+          cat("\n")
+        } 
       }
     }
   }
   
-  cat("\nResults:\n")  
+  cat("Results:\n")  
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
-  if (comparison == "complement") {# && length(unique_combinations) == 0) {
+  if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%.3f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
+        sprintf("%.2f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
   } 
   
-  # if (!is.null(x$messages$mix_weights)) {
-  #   text1 <- paste("Note: Since the constraint matrix for hypotheses", paste0(sQuote(names(wt_method_boot)), collapse = ", "), 
-  #                  "is not full row-rank, we used the 'boot' method for calculating", 
-  #                  "the penalty term value. For additional details, see '?goric' or the Vignette.\n")
-  #   message(text)
-  # }
   
   if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
@@ -141,11 +184,11 @@ summary.con_goric <- function(object, brief = TRUE,
     
     vnames <- names(x$ormle$b.restr)
     vnames_len <- length(x$objectList)
-    first_na <- apply(x$ormle$b.restr[1:vnames_len, ], 1, function(x) { which(is.na(x))[1] }) -1
+    first_na <- apply(x$ormle$b.restr[1:vnames_len, , drop = FALSE], 1, function(x) { which(is.na(x))[1] }) -1 
     first_na[is.na(first_na)] <- 0
     
     selected_names <- list()
-    for (i in 1:length(first_na)) {
+    for (i in seq_len(length(first_na))) {
       if (first_na[i] == 0) {
         selected_names[[i]] <- vnames
       } else {
@@ -157,13 +200,13 @@ summary.con_goric <- function(object, brief = TRUE,
       colnames(Amat) <- vnames
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                                    meq)), bvec, " ")
-      rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
+      rownames(out.rest) <- paste(seq_len(nrow(out.rest)), ":", sep = "")
       colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
       idx <- ncol(out.rest)
       out.rest[, idx] <- "no"
       out.rest[iact, idx] <- "yes"
       if (nrow(Amat) == meq) {
-        out.rest[1:nrow(Amat), idx] <- "yes"
+        out.rest[seq_len(nrow(Amat)), idx] <- "yes"
       }  
       out.rest <- as.data.frame(out.rest)
       
@@ -189,7 +232,7 @@ summary.con_goric <- function(object, brief = TRUE,
     if (!is.null(object$hypotheses_usr)) {
       cat("\norder-restricted hypotheses:\n\n")
       hypotheses_usr <- object$hypotheses_usr
-      for (i in 1:length(x$objectList)) {
+      for (i in seq_len(length(x$objectList))) {
         text <- gsub("(\\n\\s+)+", "\n", hypotheses_usr[[i]])
         cat(paste0(objectnames[i],":\n", trimws(gsub("\\h+", " ", text, perl = TRUE))), "\n\n")
       }

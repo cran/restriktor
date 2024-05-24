@@ -24,15 +24,15 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
     # check for user input error
-    if (grepl(paste(operators, collapse = "|"), constraints) | all(grepl("[><]{2,}", constraints))) {
-      stop("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
-           "\n", "See ?restriktor for details on how to specify the constraint syntax or check the website:",
-           "\n", "https://restriktor.org/tutorial/syntax.html.", call. = FALSE) 
+    if (grepl(paste(operators, collapse = "|"), constraints) || all(grepl("[><]{2,}", constraints))) {
+      stop(paste("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
+           "See ?restriktor for details on how to specify the constraint syntax or check the website:",
+           "https://restriktor.org/tutorial/syntax.html."), call. = FALSE) 
     }
     
     # deal with constraints of format x1 < x2 < x3
     OUT <- list()
-    for (i in 1:length(constraints)) {
+    for (i in seq_len(length(constraints))) {
       # some constraint cleanup
       constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
@@ -55,20 +55,10 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax[[i]] <- gsub(">=",">", constraint.syntax[[i]], perl = TRUE)
       constraint.syntax <- unlist(constraint.syntax[i])
       
-      # LIST <- list()
-      # this is where the constraints are transformed back to pairwise constraints
-      # x1 < x2 < x3 becomes x1 < x2; x2 < x3. This is needed for computing the
-      # constraint matrix. 
-      # for (k in 1:length(constraint.syntax)) {
-      #   LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
-      # }
-      
-      #if (grepl("abs\\(.*\\)", constraint.syntax))
-      
       LIST <- lapply(constraint.syntax, function(x) { sapply(x, expand_parentheses) })
       LIST <- lapply(LIST, function(x) { sapply(x, expand_compound_constraints) })
       
-      unLIST <- unlist(LIST)
+      unLIST <- unique(unlist(LIST))
       def.idx  <- grepl(":=", unLIST)
       unLIST[!def.idx] <- gsub("=", "==", unLIST[!def.idx])
       OUT[[i]] <- paste(unLIST, collapse = '\n')
@@ -93,9 +83,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     LIST$op  <- op
     LIST$rhs <- c(LIST$rhs, rhs) 
     
-    parTable$lhs <- c(parTable$lhs, LIST$lhs)
-    parTable$op <- c(parTable$op, LIST$op)
-    parTable$rhs <- c(parTable$rhs, LIST$rhs)
+    parTable$lhs   <- c(parTable$lhs, LIST$lhs)
+    parTable$op    <- c(parTable$op, LIST$op)
+    parTable$rhs   <- c(parTable$rhs, LIST$rhs)
     parTable$label <- c(parTable$label, rep("", length(lhs)))
     
     # equality constraints
@@ -109,14 +99,14 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     nsc_lhs.idx <- sum(grepl("<|>|=", parTable$lhs))
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
     
-    if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
-      stop("Restriktor ERROR: I have no idea how to deal with this constraint syntax. \n",
-           "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 
-            "https://restriktor.org/tutorial/syntax.html. \n", sep = "", call. = FALSE
+    if (all(Amat == 0) || nsc_lhs.idx > 0 || nsc_rhs.idx > 0) {
+      stop(paste("Restriktor ERROR: I have no idea how to deal with this constraint syntax.",
+           "See ?restriktor for details on how to specify the constraint syntax or check the website", 
+            "https://restriktor.org/tutorial/syntax.html."), sep = "", call. = FALSE
       )
     }
     
-    ## In case of abs() the contraints may incorretly be considered as non-linear. 
+    ## In case of abs() the constraints may incorrectly be considered as non-linear. 
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
     
@@ -132,14 +122,11 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       cin.function <- lav_partable_constraints_ciq(partable = parTable_org, con = LIST2)
       ceq.function <- lav_partable_constraints_ceq(partable = parTable_org, con = LIST2)
       
-      CON$cin.nonlinear.idx <- con_constraints_nonlinear_idx(func = cin.function, 
+      CON$cin.nonlinear.idx <- lav_constraints_nonlinear_idx(func = cin.function, 
                                                              npar = length(parTable_org$est))
-      CON$ceq.nonlinear.idx <- con_constraints_nonlinear_idx(func = ceq.function, 
+      CON$ceq.nonlinear.idx <- lav_constraints_nonlinear_idx(func = ceq.function, 
                                                              npar = length(parTable_org$est))
     }
-    
-    
-    #CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints) ) {
       constraints <- rbind(constraints)
@@ -152,9 +139,15 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     stop("no restrictions were specified.") 
   }
   
+  # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
+  # full row-rank matrix.
+  rrc <- remove_redundant_constraints(Amat, bvec)
+  Amat <- rrc$constraints
+  bvec <- rrc$rhs
+  
   if (!(nrow(Amat) == length(bvec))) {
-    warning("restriktor WARNING: The number of constraints does not match 
-                    the \'rhs\' (nrow(Amat) != length(rhs)).")
+    warning(paste("restriktor WARNING: The number of constraints does not match", 
+                  "the \'rhs\' (nrow(Amat) != length(rhs))."))
   }
   
   if (meq > nrow(Amat)) { 
@@ -162,65 +155,13 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   }
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
-    stop("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions")
+    stop(paste("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
   }
   
   if (debug && is.character(constraints)) {
     print(as.data.frame(parTable, stringsAsFactors = FALSE))
     print(CON)
   }
-  
-  
-  # rAmat <- GaussianElimination(t(Amat))
-
-  ## still to catch 
-  #H1 <- 'x1 < 4; x1 > 1' # range restrictie
-  #H1 <- 'x1 < 1; x1 > 1' # equality
-  #H1 <- 'x1 > 3; x1 > 4' # 
-  #H1 <- 'x1 > -1; x1 > 4'#
-  
-  # if (mix.weights == "pmvnorm") {
-  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-  #     ## check for inconsistent constraints: quadprog gives an error if constraints
-  #     ## are inconsistent
-  #     # consistent.check <- con_solver_gorica(est  = est, 
-  #     #                                       VCOV = VCOV, 
-  #     #                                       Amat = Amat, 
-  #     #                                       bvec = bvec, 
-  #     #                                       meq  = meq)
-  #     
-  #     ## remove any linear dependent rows from the constraint matrix. Amat
-  #     ## must be of full row rank.
-  #     # remove any zero vectors
-  #     allZero.idx <- rowSums(abs(Amat)) == 0
-  #     Amat <- Amat[!allZero.idx, , drop = FALSE]
-  #     bvec <- bvec[!allZero.idx]
-  #     # rank Amat
-  #     rank <- qr(Amat)$rank 
-  #     # singular value decomposition
-  #     s <- svd(Amat)
-  #     # continue untill Amat is of full-row rank
-  #     while (rank != length(s$d)) {
-  #       # check which singular values are zero
-  #       zero.idx <- which(zapsmall(s$d) <= 1e-16)
-  #       # remove linear dependent rows and reconstruct the constraint matrix
-  #       Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-  #       # zapping small ones to zero
-  #       Amat <- zapsmall(Amat)
-  #       bvec <- bvec[-zero.idx]
-  #       s <- svd(Amat)
-  #       if (debug) {
-  #         cat("rank = ", rank, " ... non-zero det. = ", length(s$d), "\n")
-  #       }
-  #     }
-  #   }
-  # } else if (rAmat$rank < nrow(Amat) &&
-  #            !(se %in% c("none", "boot.model.based", "boot.standard")) &&
-  #            rAmat$rank != 0L) {
-  #   warning(paste("Restriktor Warning: No standard errors could be computed.
-  #                     The constraint matrix must be full row-rank.
-  #                     Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\".")) 
-  # }
   
   OUT <- list(CON      = CON, 
               parTable = parTable,

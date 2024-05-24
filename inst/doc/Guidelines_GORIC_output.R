@@ -29,7 +29,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -80,7 +80,7 @@ H1 <- "D1 > D2 > D3" # Denoting mu1 > mu2 > mu3
 
 # Apply GORIC #
 set.seed(123) 
-results_1c <- goric(fit, hypotheses = list(H1), comparison = "complement")
+results_1c <- goric(fit, hypotheses = list(H1 = H1), comparison = "complement")
 results_1c
 
 ## ----message = FALSE, warning = FALSE---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
 
 # Apply GORIC #
 set.seed(123) 
-results_1u <- goric(fit, hypotheses = list(H1))
+results_1u <- goric(fit, hypotheses = list(H1 = H1))
 results_1u
 
 ## ----message = FALSE, warning = FALSE---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ H2 <- "D1 < D2 < D3" # mu1 < mu2 < mu3
 
 # Apply GORIC #
 set.seed(123) 
-results_12u <- goric(fit, hypotheses = list(H1, H2))
+results_12u <- goric(fit, hypotheses = list(H1 = H1, H2 = H2))
 results_12u
 round(results_12u$ratio.gw, 3)
 
@@ -127,7 +127,7 @@ sample$D <- D
 #library(fastDummies)
 #sample <- dummy_cols(sample, select_columns = 'D')
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -195,7 +195,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
@@ -259,7 +259,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -327,7 +327,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -418,7 +418,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -490,7 +490,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -558,7 +558,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -623,7 +623,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -685,7 +685,7 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -746,7 +746,7 @@ D <- as.factor(D_)
 sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -809,7 +809,7 @@ D <- as.factor(D_)
 sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
-colnames(sample) <- paste0("D_", 1:ncol(sample))
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)

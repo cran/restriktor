@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.5-30\cr
-  Date: \tab 2023-10-03\cr
+  Version: \tab 0.5-60\cr
+  Date: \tab 2024-05-24\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
@@ -92,7 +92,7 @@ DATA <- subset(DATA, Group != "Control")
 fit.lm <- lm(Age ~ -1 + Group, data = DATA)
 summary(fit.lm)
 
-## restricted linear model with restriktions that the walking 
+## restricted linear model with restrictions that the walking 
 ## exercises would not have a negative effect of increasing the 
 ## mean age at which a child starts to walk. 
 

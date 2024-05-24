@@ -18,28 +18,24 @@
 restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
-      B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-      mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, 
-      cl = NULL, seed = NULL, control = list(), 
-      verbose = FALSE, debug = FALSE, \dots)
+      B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+      control = list(), verbose = FALSE, debug = FALSE, \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-       mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, 
-       cl = NULL, seed = NULL, control = list(), 
-       verbose = FALSE, debug = FALSE, \dots)
+       B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = list(), verbose = FALSE, debug = FALSE, \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-       mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, 
-       cl = NULL, seed = NULL, control = list(), 
-       verbose = FALSE, debug = FALSE, \dots)
+       B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = list(), verbose = FALSE, debug = FALSE, \dots)
 
 \method{conMLM}{mlm}(object, constraints = NULL, se = "none", 
-       B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-       mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, 
-       cl = NULL, seed = NULL, control = list(), 
-       verbose = FALSE, debug = FALSE, \dots)
+       B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = list(), verbose = FALSE, debug = FALSE, \dots)
 }
 
 \arguments{
@@ -90,7 +86,7 @@ restriktor(object, constraints = NULL, \dots)
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. Note: only used if constraints input is a 
   matrix or vector.}
-  \item{mix.weights}{if \code{"pmvnorm"} (default), the chi-bar-square 
+  \item{mix_weights}{if \code{"pmvnorm"} (default), the chi-bar-square 
   weights are computed based on the multivariate normal distribution 
   function with additional Monte Carlo steps. If \code{"boot"}, the 
   chi-bar-square weights are computed using parametric bootstrapping. 
@@ -99,9 +95,6 @@ restriktor(object, constraints = NULL, \dots)
   for computing the GORIC. Moreover, the weights are re-used in the 
   \code{\link{iht}} function for computing the p-value for the 
   test-statistic, unless the p-value is computed directly via bootstrapping.}
-  \item{mix.bootstrap}{integer; number of bootstrap draws for 
-  \code{mix.weights = "boot"}. The default value is set to 99999. 
-  Parallel support is available.}
   \item{parallel}{the type of parallel operation to be used (if any). 
   If missing, the default is set "no".}
   \item{ncpus}{integer: number of processes to be used in parallel 
@@ -120,12 +113,31 @@ restriktor(object, constraints = NULL, \dots)
       \item \code{tol} numerical tolerance value. Estimates smaller 
       than \code{tol} are set to 0.
     }
+    Control options for calculating the chi-bar-square weights:
+    \itemize{
+      \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
+      of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
+      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
+      \code{mix_weights_bootstrap_limit}.
+      
+      \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
+      The default value is set to 1e5.
+      
+      \item \code{convergence_crit} the convergence criterion for the iterative bootstrap
+      process. Default is 1e-03.
+    }
   }
   \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
   \item{debug}{if TRUE, debugging information about the constraints
-  is printed out.
-  }
-  \item{\ldots}{no additional arguments for now.}
+  is printed out.}
+  
+  \emph{Options for calculating the chi-bar-square weights}:
+  \item{\ldots}{parameters passed to the truncated multivariate normal distribution.
+      By default, restriktor (i.e. \code{con_weights_boot} function) uses no 
+      truncation points for calculating the chi-bar-square weights, which renders 
+      to the multivariate normal distribution. See the manual page of the 
+      \code{rtmvnorm} function from the \pkg{rtmvnorm} to see how to specify a 
+      truncated mvnorm distribution and the possible arguments.}
 }
 
 \details{

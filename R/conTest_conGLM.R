@@ -18,7 +18,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no","residual","model.based","parametric","mix.weights"))) {
+  if(!(boot %in% c("no","residual","model.based","parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -95,7 +95,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   if (type == "global") {
     CALL <- list(object = model.org, constraints = AmatG, rhs = bvecG, 
-                 neq = nrow(AmatG), se = "none", mix.weights = "none")
+                 neq = nrow(AmatG), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -103,7 +103,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, rhs = bvec, 
-                 neq = nrow(Amat), se = "none", mix.weights = "none")
+                 neq = nrow(Amat), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -120,7 +120,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         # be preserved in the alternative hypothesis.
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop = FALSE], 
                      rhs = bvec[1:meq.alt], neq = meq.alt, 
-                     se = "none", mix.weights = "none")
+                     se = "none", mix_weights = "none")
         glm.fit <- do.call("restriktor", CALL)
         
         b.restr.alt <- coef(glm.fit)
@@ -148,10 +148,20 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    #wt.mix <- wt.bar
-    #attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.bar
-    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
+    
+    attr(pvalue, "wt.bar"                     ) <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method"              ) <- attr(wt.bar, "method")
+    attr(pvalue, "converged"                  ) <- attr(wt.bar, "converged")
+    attr(pvalue, "convergence_crit"           ) <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws"      ) <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "error.idx"                  ) <- attr(wt.bar, "error.idx")
+    attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
+    
+    attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
+    attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
+    
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -243,7 +253,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -253,15 +263,15 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   # original model
   model.org <- object$model.org
   # model matrix
-  X <- model.matrix(object)[,,drop=FALSE]
+  #X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  #y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
   #w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model.org) 
+  #Sigma <- vcov(model.org) 
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -318,7 +328,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   if (type == "global") {  
     CALL <- list(object = model.org, constraints = AmatG, 
-                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix.weights = "none")
+                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     ll0 <- glm.fit$loglik
@@ -327,7 +337,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
-                 rhs = bvec, neq = nrow(Amat), se = "none", mix.weights = "none")
+                 rhs = bvec, neq = nrow(Amat), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     ll0 <- glm.fit$loglik
@@ -345,7 +355,8 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop=FALSE], 
-                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix.weights = "none")
+                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", 
+                     mix_weights = "none")
         glm.fit <- do.call("restriktor", CALL)
         
         ll0 <- glm.fit$loglik
@@ -369,7 +380,20 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt.bar") <- wt.bar
+    
+    attr(pvalue, "wt.bar"                     ) <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method"              ) <- attr(wt.bar, "method")
+    attr(pvalue, "converged"                  ) <- attr(wt.bar, "converged")
+    attr(pvalue, "convergence_crit"           ) <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws"      ) <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "error.idx"                  ) <- attr(wt.bar, "error.idx")
+    attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
+    
+    attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
+    attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
+    
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -462,7 +486,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix_weights"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -480,7 +504,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model.org)
+  #Sigma <- vcov(model.org)
   # sample size
   n <- dim(X)[1]
   # number of parameters
@@ -547,7 +571,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
 
   if (type == "global") {
     CALL <- list(object = model.org, constraints = AmatG, 
-                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix.weights = "none")
+                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -578,7 +602,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     ###############################################
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
-                 rhs = bvec, neq = nrow(Amat), se = "none", mix.weights = "none")
+                 rhs = bvec, neq = nrow(Amat), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -638,7 +662,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop=FALSE], 
-                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix.weights = "none")
+                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix_weights = "none")
         glm.fit <- do.call("restriktor", CALL)
         
         b.restr.alt <- coef(glm.fit)
@@ -683,7 +707,20 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               bvec        = bvec,
                               meq         = meq,
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt.bar") <- wt.bar
+    
+    attr(pvalue, "wt.bar"                     ) <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method"              ) <- attr(wt.bar, "method")
+    attr(pvalue, "converged"                  ) <- attr(wt.bar, "converged")
+    attr(pvalue, "convergence_crit"           ) <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws"      ) <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "error.idx"                  ) <- attr(wt.bar, "error.idx")
+    attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
+    
+    attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
+    attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
+
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")

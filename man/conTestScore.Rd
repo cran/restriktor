@@ -51,8 +51,8 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   Instead of computing the p-value via simulation, the p-value
   can also be computed using the chi-bar-square weights. If 
   \code{"no"}, the p-value is computed based on the weights 
-  obtained via simulation (\code{mix.weights = "boot"}) or using the 
-  multivariate normal distribution function (\code{mix.weights = "pmvnorm"}).
+  obtained via simulation (\code{mix_weights = "boot"}) or using the 
+  multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
   Note that, these weights are already available in the restriktor objected and
   do not need to be estimated again. However, there are two exception for objects 
   of class \code{conRLM}, namely for computing the p-value for the robust 
@@ -88,18 +88,31 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   bootstrap draw.}
   
   \item{control}{a list of control arguments: 
-    \itemize{
-      \item \code{absval} tolerance criterion for convergence 
-      (default = sqrt(.Machine$double.eps)). Only used for model 
-      of class lm.
-      \item \code{maxit} the maximum number of iterations for the 
-      optimizer (default = 10000). Only used for model of class 
-      mlm (not yet supported). 
-      \item \code{tol} numerical tolerance value. Estimates 
-      smaller than \code{tol} are set to 0.
+   \itemize{
+     \item \code{absval} tolerance criterion for convergence 
+     (default = sqrt(.Machine$double.eps)). Only used for model 
+     of class lm.
+     \item \code{maxit} the maximum number of iterations for the 
+     optimizer (default = 10000). Only used for model of class 
+     mlm (not yet supported). 
+     \item \code{tol} numerical tolerance value. Estimates 
+     smaller than \code{tol} are set to 0.
+     \item \code{chunk_size} the chi-bar-square weights are computed for samples 
+     of size \code{chunk_size = 5000L}. This process is repeated iteratively 
+     until the weights converges (see \code{convergenge_crit}) or the maximum 
+     is reached, i.e., mix_weights_bootstrap_limit.
+     \item \code{convergence_crit} the convergence criterion for the iterative 
+     process. The default is 1e-03.
     }
   }
-  \item{\dots}{additional arguments to be passed to the p.distr function.}
+
+  \item{\dots}{Additional arguments that can be passed to the p.distr function, 
+  or arguments for the restriktor or iht function. Consider, for example, the 
+  mix_weights_bootstrap_limit argument, which specifies the maximum number of 
+  bootstrap draws (default is 100.000) used to compute the chi-bar-square weights. 
+  If mix_weights_bootstrap_limit is set to 100.000, then in each iteration, a 
+  sample of size 5000 is added until the weights converge, or the maximum limit 
+  is reached.}
 }
 
 \details{The following hypothesis tests are available:

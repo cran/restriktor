@@ -1,8 +1,7 @@
 conGLM.glm <- function(object, constraints = NULL, se = "standard", 
-                       B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-                       mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, cl = NULL, 
-                       seed = NULL, control = list(), verbose = FALSE, 
-                       debug = FALSE, ...) {
+                       B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+                       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+                       control = list(), verbose = FALSE, debug = FALSE, ...) {
     
   # check class
   if (!(class(object)[1] == "glm")) {
@@ -19,8 +18,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
   # check method to compute chi-square-bar weights
-  if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+  if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # timing
@@ -107,30 +106,24 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   messages <- list()
   
   ## check if constraint matrix is of full-row rank. 
-  rAmat <- GaussianElimination(t(Amat))
-  if (mix.weights == "pmvnorm") {
-    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      messages$mix_weights <- paste(
-        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
- are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
- For more information see ?restriktor.\n"
-      )
-      mix.weights <- "boot"
-    }
-  } else if (rAmat$rank < nrow(Amat) &&
+  # rAmat <- GaussianElimination(t(Amat))
+  Amat_meq_PT <- PT_Amat_meq(Amat, meq)
+  rAmat <- Amat_meq_PT$RREF
+
+  if (rAmat$rank < nrow(Amat) &&
              !(se %in% c("none", "boot.model.based", "boot.standard")) &&
              rAmat$rank != 0L) {
     se <- "none"
-    warning(paste("\nRestriktor Warning: No standard errors could be computed.
-                    The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+    warning(paste("\nRestriktor Warning: No standard errors could be computed, because",
+                  "the constraint matrix must be full row-rank.",
+                  "Try se = \"boot.model.based\" or \"boot.standard\"."))
   }
   
   
   ## some checks
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: length coefficients and the number of",
-         "\n       columns constraints-matrix must be identical")
+    stop(paste("Restriktor ERROR: length coefficients and the number of",
+         "columns constraints-matrix must be identical"))
   }
   
   if (!(nrow(Amat) == length(bvec))) {
@@ -142,7 +135,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {
     b.restr <- b.unrestr
     
     OUT <- list(CON               = CON,
@@ -280,8 +273,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                                        meq          = meq), silent = TRUE)
       
       if (inherits(information.inv, "try-error")) {
-        stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+        stop(paste("Restriktor Warning: No standard errors could be computed.",
+                   "Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
       }
       
       
@@ -293,8 +286,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
       }
     } else if (se == "boot.model.based") {
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
-          stop("Restriktor ERROR: no restrictions on intercept possible",
-               "\n       for 'se = boot.model.based' bootstrap method.")
+          stop(paste("Restriktor ERROR: no restrictions on intercept possible",
+               "for 'se = boot.model.based' bootstrap method."))
       }
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
@@ -303,7 +296,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  se          = "none",
-                                 mix.weights = "none",
+                                 mix_weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -318,7 +311,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  se          = "none",
-                                 mix.weights = "none",
+                                 mix_weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -333,42 +326,48 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   ## determine level probabilies
-  if (mix.weights != "none") {
-    if (nrow(Amat) == meq) {
-      # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - qr(Amat)$rank + 1
-      wt.bar[wt.bar.idx] <- 1
-    } else if (all(c(Amat) == 0)) { 
-      # unrestricted case
-      wt.bar <- c(rep(0L, p), 1)
-    } else if (mix.weights == "boot") { 
-      # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV     = Sigma,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = mix.bootstrap,
-                                 parallel = parallel, 
-                                 ncpus    = ncpus, 
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
-    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
-      # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+  if (mix_weights != "none" && inherits(object, "goric")) {
+    RREF <- Amat_meq_PT$RREF
+    OUT$PT_Amat <- PT_Amat <- Amat_meq_PT$PT_Amat
+    OUT$PT_meq <- PT_meq <- Amat_meq_PT$PT_meq
+    
+    if (mix_weights == "pmvnorm") {
+      if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
+        messages$mix_weights_rank <- paste(
+          "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+          "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
+          "For more information see ?restriktor.\n"
+        )
+        mix_weights <- "boot"
+      }
     } 
+    
+    wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = Sigma, 
+                                   mix_weights = mix_weights, seed = seed, 
+                                   control = control, verbose = verbose, ...) 
   } else {
-    wt.bar <- NA
+    if (mix_weights == "pmvnorm") {
+      if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+        messages$mix_weights_rank <- paste(
+          "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+          "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
+          "For more information see ?restriktor.\n"
+        )
+        mix_weights <- "boot"
+      }
+    }
+    wt.bar <- calculate_weight_bar(Amat = Amat, meq = meq, VCOV = Sigma, 
+                                   mix_weights = mix_weights, seed = seed, 
+                                   control = control, verbose = verbose, ...) 
   }
-  attr(wt.bar, "method") <- mix.weights
+  attr(wt.bar, "method") <- mix_weights
   OUT$wt.bar <- wt.bar
   
   if (debug) {
     print(list(mix.weigths = wt.bar))
   }
   
-  timing$mix.weights <- (proc.time()[3] - start.time)
+  timing$mix_weights <- (proc.time()[3] - start.time)
   OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
