@@ -30,6 +30,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -128,6 +129,7 @@ sample$D <- D
 #sample <- dummy_cols(sample, select_columns = 'D')
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -196,7 +198,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
-
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -260,6 +262,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -328,6 +331,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -419,6 +423,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -491,6 +496,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -559,6 +565,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -624,6 +631,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -686,6 +694,7 @@ D <- as.factor(D_)
 sample$D <- D
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -747,6 +756,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -810,6 +820,7 @@ sample$D <- D
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)

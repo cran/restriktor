@@ -73,8 +73,7 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
               "You should use different 'eps' and/or 'eps1'")
     if (n0 > 0 || n1 > 0) {
       if (n0 > 0) {
-        formE <- function(e) formatC(e, digits = max(2, 
-                                                     5 - 3), width = 1)
+        formE <- function(e) formatC(e, digits = max(2, 5 - 3), width = 1)
         i0 <- which(w0)
         maxw <- max(w[w0])
         c3 <- paste0("with |weight| ", if (maxw == 0) 
@@ -106,8 +105,6 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
     }
   }
 }
-
-
 
 
 # function taken from 'bain' package 
@@ -189,38 +186,6 @@ calculate_model_comparison_metrics <- function(x) {
   
   return(out)
 }
-
-# this function is called from the goric_benchmark_anova() function
-parallel_function <- function(i, samplesize, var.e, nr.iter, means_pop, 
-                              hypos, PrefHypo, object, n.coef, sample, 
-                              control, ...) {  
-  # Sample residuals
-  epsilon <- rnorm(sum(samplesize), sd = sqrt(var.e))
-  # Generate data
-  sample$y <- as.matrix(sample[, 2:(1 + n.coef)]) %*% matrix(means_pop, 
-                                                             nrow = n.coef) + epsilon
-  df <- data.frame(y = sample$y, sample[, 2:(1 + n.coef)])
-  
-  # Obtain fit
-  fit <- lm(y ~ 0 + ., data = df)
-  # GORICA or GORICA depending on what is done in data
-  results.goric <- goric(fit,
-                         hypotheses = hypos,
-                         comparison = object$comparison,
-                         type = object$type,
-                         control = control, 
-                         ...)
-  
-  # Return the relevant results
-  list(
-    #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
-    goric = results.goric$result[PrefHypo, 7],
-    gw    = results.goric$ratio.gw[PrefHypo, ],
-    lw    = results.goric$ratio.lw[PrefHypo, ],
-    ld    = (results.goric$result$loglik[PrefHypo] - results.goric$result$loglik)
-  )
-}
-
 
 
 # Function to identify list and corresponding messages

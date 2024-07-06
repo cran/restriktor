@@ -1,31 +1,32 @@
-\name{conTestF}
-\alias{conTestF}
-\alias{conTestF.conLM}
-\alias{conTestF.conRLM}
-\alias{conTestF.conGLM}
+\name{conTestScore}
+\alias{conTestScore}
+\alias{conTestScore.conLM}
+\alias{conTestScore.conRLM}
+\alias{conTestScore.conGLM}
 
-\title{F-bar test for iht}
-\description{\code{conTestF} tests linear equality and/or 
-inequality restricted hypotheses for linear models by F-tests. It can be 
-used directly and is called by the \code{conTest} function if \code{test = "F"}.
+\title{Score-bar test for iht}
+\description{\code{conTestScore} tests linear equality and/or 
+inequality restricted hypotheses for (robust) linear models by score-tests. It can be 
+used directly and is called by the \code{conTest} function if \code{test = "score"}.
+
 }
 
 \usage{
 
-\method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = rnorm, 
-         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, \dots)
+\method{conTestScore}{conLM}(object, type = "A", neq.alt = 0, 
+           boot = "no", R = 9999, p.distr = rnorm, 
+           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+           verbose = FALSE, control = NULL, \dots)
 
-\method{conTestF}{conRLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = rnorm, 
-         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, \dots)
+\method{conTestScore}{conRLM}(object, type = "A", neq.alt = 0, 
+           boot = "no", R = 9999, p.distr = rnorm,  
+           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+           verbose = FALSE, control = NULL, \dots)
 
-\method{conTestF}{conGLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = rnorm, 
-         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, \dots)
+\method{conTestScore}{conGLM}(object, type = "A", neq.alt = 0, 
+           boot = "no", R = 9999, p.distr = rnorm,  
+           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+           verbose = FALSE, control = NULL, \dots)
 
 }
 
@@ -35,83 +36,84 @@ used directly and is called by the \code{conTest} function if \code{test = "F"}.
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}
   
-    \item{neq.alt}{integer: number of equality constraints that 
-    are maintained under the alternative hypothesis (for hypothesis 
-    test type "B"), see example 3.}
+  \item{neq.alt}{integer: number of equality constraints that 
+  are maintained under the alternative hypothesis (for hypothesis 
+  test type "B"), see example 3.}
   
-    \item{boot}{the null-distribution of these test-statistics 
-    (except under type "C") takes the form of a mixture of 
-    F-distributions. The tail probabilities can be computed directly 
-    via bootstrapping; if \code{"parametric"}, the p-value is 
-    computed based on the parametric bootstrap. By default, samples 
-    are drawn from a normal distribution with mean zero and varance 
-    one. See \code{p.distr} for other distributional options. If 
-    \code{"model.based"}, a model-based bootstrap method is used. 
-    Instead of computing the p-value via simulation, the p-value
-    can also be computed using the chi-bar-square weights. If 
-    \code{"no"}, the p-value is computed based on the weights 
-    obtained via simulation (\code{mix_weights = "boot"}) or using the 
-    multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
-    Note that, these weights are already available in the restriktor objected and
-    do not need to be estimated again. However, there are two exception for objects 
-    of class \code{conRLM}, namely for computing the p-value for the robust 
-    \code{test} = \code{"Wald"} and the robust \code{"score"}. In these cases 
-    the weights need to be recalculated.
+  \item{boot}{the null-distribution of these test-statistics 
+  (except under type "C", see details) takes the form of a mixture of 
+  F-distributions. The tail probabilities can be computed directly 
+  via bootstrapping; if \code{"parametric"}, the p-value is 
+  computed based on the parametric bootstrap. By default, samples 
+  are drawn from a normal distribution with mean zero and varance 
+  one. See \code{p.distr} for other distributional options. If 
+  \code{"model.based"}, a model-based bootstrap method is used. 
+  Instead of computing the p-value via simulation, the p-value
+  can also be computed using the chi-bar-square weights. If 
+  \code{"no"}, the p-value is computed based on the weights 
+  obtained via simulation (\code{mix_weights = "boot"}) or using the 
+  multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
+  Note that, these weights are already available in the restriktor objected and
+  do not need to be estimated again. However, there are two exception for objects 
+  of class \code{conRLM}, namely for computing the p-value for the robust 
+  \code{test} = \code{"Wald"} and the robust \code{"score"}. In these cases 
+  the weights need to be recalculated.
+  }
+  
+  \item{R}{integer; number of bootstrap draws for \code{boot}. 
+  The default value is set to 9999.}
+  
+  \item{p.distr}{random generation distribution for the parametric bootstrap. For 
+  all available distributions see \code{?distributions}. For example, 
+  if \code{rnorm}, samples are drawn from the normal distribution (default) 
+  with mean zero and variance one. If \code{rt}, samples are drawn from 
+  a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 
+  distribution. The random generation distributional parameters will 
+  be passed in via \ldots.}
+  
+  \item{parallel}{the type of parallel operation to be used 
+  (if any). If missing, the default is set "no".}
+  
+  \item{ncpus}{integer: number of processes to be used in parallel 
+  operation: typically one would chose this to the number of 
+  available CPUs.}
+  
+  \item{cl}{an optional parallel or snow cluster for use if 
+  parallel = "snow". If not supplied, a cluster on the local 
+  machine is created for the duration of the conTest call.}
+  
+  \item{seed}{seed value. The default value is set to 1234.}
+  
+  \item{verbose}{logical; if TRUE, information is shown at each 
+  bootstrap draw.}
+  
+  \item{control}{a list of control arguments: 
+   \itemize{
+     \item \code{absval} tolerance criterion for convergence 
+     (default = sqrt(.Machine$double.eps)). Only used for model 
+     of class lm.
+     \item \code{maxit} the maximum number of iterations for the 
+     optimizer (default = 10000). Only used for model of class 
+     mlm (not yet supported). 
+     \item \code{tol} numerical tolerance value. Estimates 
+     smaller than \code{tol} are set to 0.
+     \item \code{chunk_size} the chi-bar-square weights are computed for samples 
+     of size \code{chunk_size = 5000L}. This process is repeated iteratively 
+     until the weights converges (see \code{convergenge_crit}) or the maximum 
+     is reached, i.e., mix_weights_bootstrap_limit.
+     \item \code{convergence_crit} the convergence criterion for the iterative 
+     process. The default is 1e-03.
     }
-  
-    \item{R}{integer; number of bootstrap draws for \code{boot}. 
-    The default value is set to 9999.}
-    
-    \item{p.distr}{random generation distribution for the parametric bootstrap. For 
-    all available distributions see \code{?distributions}. For example, 
-    if \code{rnorm}, samples are drawn from the normal distribution (default) 
-    with mean zero and variance one. If \code{rt}, samples are drawn from 
-    a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 
-    distribution. The distributional parameters will be passed in via \ldots.}
-    
-    \item{parallel}{the type of parallel operation to be used 
-    (if any). If missing, the default is set "no".}
-    
-    \item{ncpus}{integer: number of processes to be used in parallel 
-    operation: typically one would chose this to the number of 
-    available CPUs.}
-    
-    \item{cl}{an optional parallel or snow cluster for use if 
-    parallel = "snow". If not supplied, a cluster on the local 
-    machine is created for the duration of the conTest call.}
-    
-    \item{seed}{seed value. The default value is set to 1234.}
-    
-    \item{verbose}{logical; if TRUE, information is shown at each 
-    bootstrap draw.}
-    
-    \item{control}{a list of control arguments: 
-      \itemize{
-        \item \code{absval} tolerance criterion for convergence 
-        (default = sqrt(.Machine$double.eps)). Only used for model 
-        of class lm.
-        \item \code{maxit} the maximum number of iterations for the 
-        optimizer (default = 10000). Only used for model of class 
-        mlm (not yet supported). 
-        \item \code{tol} numerical tolerance value. Estimates 
-        smaller than \code{tol} are set to 0.
-        \item \code{chunk_size} the chi-bar-square weights are computed for samples 
-        of size \code{chunk_size = 5000L}. This process is repeated iteratively 
-        until the weights converges (see \code{convergenge_crit}) or the maximum 
-        is reached, i.e., mix_weights_bootstrap_limit.
-        \item \code{convergence_crit} the convergence criterion for the iterative 
-       process. The default is 1e-03.}
-      }
-    
+  }
+
   \item{\dots}{Additional arguments that can be passed to the p.distr function, 
   or arguments for the restriktor or iht function. Consider, for example, the 
-  mix_weights_bootstrap_limit control argument, which specifies the maximum number of 
+  mix_weights_bootstrap_limit argument, which specifies the maximum number of 
   bootstrap draws (default is 100.000) used to compute the chi-bar-square weights. 
   If mix_weights_bootstrap_limit is set to 100.000, then in each iteration, a 
   sample of size 5000 is added until the weights converge, or the maximum limit 
   is reached.}
 }
-
 
 \details{The following hypothesis tests are available:
 \itemize{
@@ -148,11 +150,6 @@ Therefore, all p-values for hypothesis test Type \code{"A"},
 \code{"B"} and \code{"global"} are computed based on mixtures of 
 F-distributions. 
 
-Note that, in case of equality constraints only, the 
-null-distribution of the (robust) F-test statistics is based on 
-an F-distribution. The (robust) Wald- and (robust) score-test 
-statistics are based on chi-square distributions.
-
 }
 
 \value{
@@ -185,24 +182,17 @@ statistics are based on chi-square distributions.
 }
 
 \references{
-Kudo, A. (1963) A multivariate analogue of the one-sided test. 
-\emph{Biometrika}, \bold{50}, 403--418.
+Silvapulle, M. and Silvapulle, P. (1995). A score test against 
+one-sided alternatives. \emph{American statistical association}, 
+\bold{90}, 342--349.
 
-Silvapulle, M. (1992a). Robust tests of inequality constraints and 
-one-sided hypotheses in the linear model. \emph{Biometrika}, 
-\bold{79}, 621--630.
-
-Silvapulle, M. (1996) On an F-type statistic for testing one-sided 
-hypotheses and computation of chi-bar-squared weights. 
-\emph{Statistics and probability letters}, \bold{28}, 137--141.
+Silvapulle, M. (1996) Robust bounded influence tests against 
+one-sided hypotheses in general parametric models. 
+\emph{Statistics and probability letters}, \bold{31}, 45--50.
 
 Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
 Statistical Inference}. Wiley, New York
 
-Wolak, F. (1987). An exact test for multiple inequality and 
-equality constraints in the linear regression model. 
-\emph{Journal of the American statistical association}, 
-\bold{82}, 782--793.
 }
 
 \author{Leonard Vanbrabant and Yves Rosseel}
@@ -210,7 +200,7 @@ equality constraints in the linear regression model.
 
 \seealso{ 
   \link[quadprog:solve.QP]{quadprog}, 
-  \code{\link{iht}}
+  \code{\link{conTest}}
 }
 
 \examples{
@@ -231,26 +221,26 @@ coef(fit1.lm)
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-myConstraints1 <- ' GroupActive  < GroupPassive < GroupNo '
+myConstraints1 <- ' GroupActive  < GroupPassive; 
+                    GroupPassive < GroupNo '
 
-iht(fit1.lm, myConstraints1)
+iht(fit1.lm, myConstraints1, test = "score")
 
 
 # another way is to first fit the restricted model
 fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-iht(fit.restr1)
+iht(fit.restr1, test = "score")
 
-\donttest{ 
-  # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 0,  1),
-                 c( 0, 1, -1))
-  myRhs1 <- rep(0L, nrow(Amat1)) 
-  myNeq1 <- 0
-  
-  iht(fit1.lm, constraints = Amat1,
-      rhs = myRhs1, neq = myNeq1)
-}            
+
+# Or in matrix notation.
+Amat1 <- rbind(c(-1, 0,  1),
+               c( 0, 1, -1))
+myRhs1 <- rep(0L, nrow(Amat1)) 
+myNeq1 <- 0
+
+iht(fit1.lm, constraints = Amat1, test = "score", rhs = myRhs1, neq = myNeq1)
+
 
 #########################
 ## Artificial examples ##
@@ -274,14 +264,15 @@ myConstraints2 <- ' group1 < group2 < group3 < group4 '
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-iht(fit2.lm, constraints = myConstraints2, type = "A", 
+iht(fit2.lm, constraints = myConstraints2, type = "A", test = "score",
     boot = "parametric", R = 9)
 
 
 # or fit restricted linear model
 fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
-iht(fit2.con)
+conTest(fit2.con, test = "score")
+
 
 # increasing means in matrix notation.
 Amat2 <- rbind(c(-1, 1, 0, 0),
@@ -291,14 +282,14 @@ myRhs2 <- rep(0L, nrow(Amat2))
 myNeq2 <- 0
 
 iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-    type = "A", boot = "parametric", R = 9)
+    type = "A", test = "score", boot = "parametric", R = 9)
 
 ## example 3:
 # combination of equality and inequality constraints.
 myConstraints3 <- ' group1  = group2
                     group3  < group4 '
 
-iht(fit2.lm, constraints = myConstraints3, type = "B", neq.alt = 1)
+iht(fit2.lm, constraints = myConstraints3, type = "B", test = "score", neq.alt = 1)
 
 # fit resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
@@ -307,7 +298,7 @@ iht(fit2.lm, constraints = myConstraints3, type = "B", neq.alt = 1)
 # bootstrap samples is too low.
 fit3.con <- restriktor(fit2.lm, constraints = myConstraints3, 
                        se = "boot.model.based", B = 9)
-iht(fit3.con, type = "B", neq.alt = 1)
+iht(fit3.con, type = "B", test = "score", neq.alt = 1)
 
 
 ## example 4:
@@ -330,10 +321,10 @@ fit4.lm <- lm(y ~ X*Z, data = DATA3)
 myConstraints4 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-iht(fit4.lm, constraints = myConstraints4)
+iht(fit4.lm, constraints = myConstraints4, test = "score")
 
 # or
 fit4.con <- restriktor(fit4.lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
-iht(fit4.con)
+iht(fit4.con, test = "score")
 }

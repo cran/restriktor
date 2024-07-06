@@ -13,7 +13,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   } else {
     obj_class <- class(object)[1]
   }
-  classes <- c("lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", "rma")
+  classes <- c("aov", "lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", "rma")
   check_class <- obj_class %in% classes
   if (!any(check_class)) {
     stop(paste("Objects of class", paste(obj_class, collapse = ", "), "are not supported. Supported classes are:", paste(classes, collapse = ", "), "."))
@@ -141,7 +141,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     sample.nobs <- nrow(model.frame(object[[1]]))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
-  } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && !isConChar) {
+  } else if (any(object_class %in% c("aov", "lm","rlm","glm","mlm")) && !isConChar) {
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]])) 
@@ -554,13 +554,13 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   
   objectList <- list(...)
   
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
+  #mcList <- as.list(match.call())
+  #mcList <- mcList[-c(1)]
   
-  mcnames <- names(mcList) == ""
-  lnames <- as.character(mcList[mcnames])
-  names(mcList)[mcnames] <- lnames
-  objectList <- mcList  
+  #mcnames <- names(mcList) == ""
+  #lnames <- as.character(mcList[mcnames])
+  #names(mcList)[mcnames] <- lnames
+  #objectList <- mcList  
   
   # only one object of class lm is allowed
   isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("lm", "glm", "mlm", "rlm")))
@@ -599,7 +599,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
       objectList$sample.nobs <- length(residuals(object))
     }
     
-    objectList <- sapply(objectList, function(x) eval(x))
+    #objectList <- sapply(objectList, function(x) eval(x))
     
     if (missing == "none") {
       object_idx <- grepl("object", names(objectList))
@@ -657,15 +657,6 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   
   
   objectList <- list(...)
-  
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
-  
-  mcnames <- names(mcList) == ""
-  lnames <- as.character(mcList[mcnames])
-  names(mcList)[mcnames] <- lnames
-  objectList <- mcList  
-  
   objectList$object      <- object
   objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
@@ -710,16 +701,6 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   objectList <- list(...)
-  
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
-  mcList$standardized <- NULL
-  
-  mcnames <- names(mcList) == ""
-  lnames <- as.character(mcList[mcnames])
-  names(mcList)[mcnames] <- lnames
-  objectList <- mcList  
-  
   est <- con_gorica_est_lav(object, standardized)
   objectList$object     <- est$estimate
   objectList$VCOV       <- est$VCOV
@@ -766,16 +747,6 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   }
   
   objectList <- list(...)
-  
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
-  
-  mcnames <- names(mcList) == ""
-  lnames <- as.character(mcList[mcnames])
-  names(mcList)[mcnames] <- lnames
-  objectList <- mcList
-  objectList$object <- NULL
-  
   objectList$object <- coef(object) 
   objectList$VCOV   <- vcov(object)
   objectList$hypotheses  <- hypotheses
@@ -823,16 +794,6 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   }
   
   objectList <- list(...)
-  
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
-  
-  mcnames <- names(mcList) == ""
-  lnames <- as.character(mcList[mcnames])
-  names(mcList)[mcnames] <- lnames
-  objectList <- mcList  
-  objectList$object <- NULL
-  
   objectList$object <- coef(object) 
   objectList$VCOV   <- vcov(object)
   objectList$comparison   <- comparison

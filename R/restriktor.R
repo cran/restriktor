@@ -16,7 +16,6 @@ restriktor <- function(object, constraints = NULL, ...) {
     pnames <- c("se", "B", "rhs", "neq", "mix_weights",  
                 "auxilliary", "emControl", "parallel", "ncpus", "cl", "seed", 
                 "control", "verbose", "debug", "auto_bound",
-                #"chunk_size", "convergence_crit",
                 # for rtmvnorm() function
                 "lower", "upper", "algorithm",
                 "burn.in.samples", "start.values", "thinning")
@@ -28,7 +27,7 @@ restriktor <- function(object, constraints = NULL, ...) {
     }
   }
 
-  if (class(object)[1] == "lm") {
+  if (class(object)[1] %in% c("lm", "aov")) {
     conLM(object, constraints, ...)
   } else if (class(object)[1] == "rlm") {
     conRLM(object, constraints, ...)
@@ -38,6 +37,6 @@ restriktor <- function(object, constraints = NULL, ...) {
     conMLM(object, constraints, ...)
   } else {
     stop("Restriktor Error: I don't know how to handles objects of class", 
-         class(object), call. = FALSE)
+         paste(class(object), sep = ","), call. = FALSE)
   } 
 }
