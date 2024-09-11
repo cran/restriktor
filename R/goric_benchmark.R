@@ -3,12 +3,8 @@ benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
-
-  args <- list(...)
   
-  # if (!is.null(args$pop_es)) {
-  #   model_type <- "means"
-  # }
+  args <- list(...)
   
   model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
@@ -31,15 +27,15 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
     benchmark_asymp(object, ...)
   }
 }
-  
+
 
 benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL, 
                             group_size = NULL, alt_group_size = NULL, 
                             quant = NULL, iter = 1000, 
                             control = list(convergence_crit = 1e-03, 
                                            chunk_size = 1e4), 
-                            ncpus = 1, cl = NULL, seed = NULL, ...) {
-
+                            ncpus = 1, seed = NULL, ...) {
+  
   
   # group_size is needed to rescale vcov based on alt_group_size.
   
@@ -48,18 +44,27 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     stop(paste("Restriktor ERROR:", 
                "The object should be of class 'con_goric' (a goric(a) object from",
                "the goric() function). However, it belongs to the following class(es):", 
-      paste(class(object), collapse = ", ")
+               paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
-  
+
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
-
+  
+  # keep current plan 
+  current_plan <- plan()  
+  on.exit(plan(current_plan), add = TRUE)  
+  if (inherits(current_plan, "sequential")) {
+    if (.Platform$OS.type == "windows") {
+      plan(future::multisession, workers = ncpus)
+    } else {
+      plan(future::multicore, workers = ncpus)
+    }
+  }
+  
   # Hypotheses
   hypos <- object$hypotheses_usr
   nr_hypos <- dim(object$result)[1]
-  pref_hypo <- which.max(object$result[, 7]) 
-  pref_hypo_name <- object$result$model[pref_hypo]
   
   # number of groups
   ngroups <- length(coef(object))
@@ -82,7 +87,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     group_means <- object$b.unrestr
     # residual variance
     VCOV <- object$Sigma
-    var_e_data <- diag(VCOV * N)[1] # are the elements on the diagonal always equal?
+    var_e_data <- diag(VCOV * N)[1] # are the elements on the diagonal always equal? Yes!
   } else {
     # Number of subjects per group
     N <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
@@ -92,9 +97,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     # residual variance
     var_e_data <- sum(object$model.org$residuals^2) / (sum(N) - ngroups)
   }
-
-  ## Compute observed Cohens f
-  cohens_f_observed <- compute_cohens_f(group_means, N, VCOV)
   
   # Compute ratio data based on group_means
   ratio_data <- compute_ratio_data(group_means)
@@ -115,21 +117,45 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # var_e <- 1
   var_e <- as.vector(var_e_data)
   
-  # When determining pop.means, value does not matter: works exactly the same
-  # choose first or last, then pop. means comparable to sample estimates
-  
-  # Possibly adjust var_e based on other sample size
+  # Possibility to adjust var_e based on alt_group_size
+  # The sample-value must also be adjusted, thus we need to fit a new goric-object
+  # with est, VCOV = VCOV_new, and N = alt_group_size
   if (!is.null(alt_group_size)) {
-    result_adjust_variance <- adjust_variance(var_e, N, alt_group_size = alt_group_size, ngroups)
+    result_adjust_variance <- adjust_variance(var_e, N, alt_group_size, ngroups)
     N <- result_adjust_variance$N
     var_e <- result_adjust_variance$var_e
+    var_e_adjusted <- result_adjust_variance$var_e / N
+    VCOV <- diag(var_e_adjusted, length(group_means))
+    
+    object <- goric(group_means, VCOV = VCOV, 
+                    sample.nobs = N[1], hypotheses = hypos, 
+                    comparison = object$comparison, type = object$type, 
+                    control = control, ...)
   }
-
+  
+  
+  ## Compute observed Cohens f
+  cohens_f_observed <- compute_cohens_f(group_means, N, VCOV)
+  
   # effect size population
   if (is.null(pop_es)) {
     pop_es <- c(0, round(cohens_f_observed, 3))
+    names(pop_es) <- c("No-effect", "Observed")
   } else {
     pop_es <- sort(pop_es)  
+  }
+  
+  # Assign row names to pop_es if they are null or empty strings
+  rnames <- names(pop_es)
+  if (is.null(rnames)) {
+    rnames <- paste0("PES_", seq_len(length(pop_es)))
+    names(pop_es) <- rnames
+  } else {
+    empty_names <- rnames == ""
+    if (any(empty_names)) {
+      rnames[empty_names] <- paste0("PE_", seq_len(sum(empty_names)))
+      names(pop_es) <- rnames
+    }
   }
   
   es <- pop_es
@@ -144,6 +170,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   sample <- data.frame(sample$D, model.matrix(~ D - 1, data = sample))
   colnames(sample)[-1] <- names(coef(object))
   
+  # preferred hypothesis
+  pref_hypo <- which.max(object$result[, 7]) 
+  pref_hypo_name <- object$result$model[pref_hypo]
+  
   nr_iter <- iter
   
   if (is.null(quant)) {
@@ -152,65 +182,56 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   } else {
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
-
-  # parallel backend
-  if (is.null(cl)) {
-    cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
-  }
-  on.exit(parallel::stopCluster(cl))
   
+  parallel_function_results <- list() 
   
-  parallel::clusterEvalQ(cl, {
-    library(restriktor) 
-  })
-
-  # Export required variables to cluster nodes
-  parallel::clusterExport(cl, c("N", "var_e", 
-                                "hypos", "pref_hypo", 
-                                "object", "ngroups", "sample",
-                                "control", "form_model_org"), 
-                          envir = environment())
+  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))  
   
-  # Use pbapply::pblapply with arguments
-  pbapply::pboptions(type = "timer", style = 1, char = ">")
-  
-  parallel_function_results <- list()  
-  for (teller_es in 1:nr_es) {
-    cat("Calculating means benchmark for effect-size =", pop_es[teller_es], "\n")
+  progressr::with_progress({
+    p <- progressr::progressor(along = seq_len(nr_iter * nr_es))  
     
-    # Update the means_pop variable within the cluster nodes
-    means_pop <- means_pop_all[teller_es, ]
-    parallel::clusterExport(cl, c("means_pop"), envir = environment())
-    
-    # main function
-    # Create a function that wraps parallel_function
-    wrapper_function_means <- function(i) {
-      parallel_function_means(i, N = N, var_e = var_e, 
-                              means_pop = means_pop, 
-                              hypos = hypos, pref_hypo = pref_hypo, 
-                              object = object, ngroups = ngroups, 
-                              sample = sample, control = control, 
-                              form_model_org = form_model_org, 
-                              ...)
+    for (teller_es in 1:nr_es) {
+      cat("Calculating means benchmark for effect-size =", es[teller_es], 
+          paste0("(", names(es)[teller_es], ")\n"))
+      
+      # Update the means_pop variable within the cluster nodes
+      means_pop <- means_pop_all[teller_es, ]
+      
+      # main function
+      # Create a function that wraps parallel_function
+      wrapper_function_means <- function(i) {
+        #if (i %% 10 == 0) {  # Only update every 10 iterations
+        p()
+        #}
+        parallel_function_means(i, N = N, var_e = var_e, 
+                                means_pop = means_pop, 
+                                hypos = hypos, pref_hypo = pref_hypo, 
+                                object = object, ngroups = ngroups, 
+                                sample = sample, control = control, 
+                                form_model_org = form_model_org, 
+                                ...)
+      }
+      
+      name <- paste0("pop_es = ", pop_es[teller_es])
+      parallel_function_results[[name]] <- future_lapply(
+        seq_len(nr_iter),
+        wrapper_function_means,
+        future.seed = TRUE  # Ensures safe and reproducible random number generation
+      )
     }
-    
-    name <- paste0("pop_es = ", pop_es[teller_es])
-    parallel_function_results[[name]] <- pbapply::pblapply(seq_len(nr_iter), 
-                                                           wrapper_function_means, 
-                                                           cl = cl)
-  }
+  })
   
   # get benchmark results
   benchmark_results <- get_results_benchmark(parallel_function_results, 
                                              object, pref_hypo, 
                                              pref_hypo_name, quant, 
                                              names_quant, nr_hypos)
-
+  
   # compute error probability
   error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
                                             est = group_means, 
                                             VCOV, control, ...)
-
+  
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
@@ -224,28 +245,27 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     ratio_pop_means = ratio_pop_means,
     res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name, 
-    error_prob_pref_hypo_name = error_prob,
+    error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
     benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
     benchmarks_difLL = benchmark_results$benchmarks_difLL,
     benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
-    combined_values = benchmark_results$combined_values
-    )
+    combined_values = benchmark_results$combined_values,
+    iter = iter
+  )
   
   class(OUT) <- c("benchmark_means", "benchmark", "list")
   return(OUT)
 } 
 
 
-
-
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
                             alt_sample_size = NULL, quant = NULL, iter = 1000, 
                             control = list(convergence_crit = 1e-03, 
                                            chunk_size = 1e4), 
-                            ncpus = 1, cl = NULL, seed = NULL, ...) {
+                            ncpus = 1, seed = NULL, ...) {
   
   # Check if object is of class con_goric
   if (!inherits(object, "con_goric")) {
@@ -254,20 +274,30 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                "However, it belongs to the following class(es):", 
                paste(class(object), collapse = ", ")), call. = FALSE)
   }
-  
+ 
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
+  # keep current plan 
+  current_plan <- plan()  
+  on.exit(plan(current_plan), add = TRUE)
+  if (inherits(current_plan, "sequential")) {
+    if (.Platform$OS.type == "windows") {
+      plan(future::multisession, workers = ncpus)
+    } else {
+      plan(future::multicore, workers = ncpus)
+    }
+  }
+  
   hypos <- object$hypotheses_usr
-  # print warning if a constants is found in the constraints list
-  check_rhs_constants(object$rhs)
+  
+  if (is.null(pop_est)) {
+    check_rhs_constants(object$rhs)
+  }
   
   nr_hypos <- dim(object$result)[1]
-  pref_hypo <- which.max(object$result[, 7])
-  pref_hypo_name <- object$result$model[pref_hypo]
   comparison <- object$comparison
   type <- object$type
-  
   est_sample <- object$b.unrestr
   n_coef <- length(est_sample)
   
@@ -280,13 +310,11 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
   }
   
-  # Check if pop_est and est_sample have the same length
   if (ncol(pop_est) != length(est_sample)) {
     stop(paste("Restriktor Error: The number of columns in pop_est (", ncol(pop_est), 
                ") does not match the length of est_sample (", length(est_sample), ").", sep=""))
   }
   
-  # Assign row names to pop_est if they are null or empty strings
   rnames <- row.names(pop_est)
   if (is.null(rnames)) {
     rnames <- paste0("PE_", seq_len(nrow(pop_est)))
@@ -300,20 +328,22 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   }  
   
   colnames(pop_est) <- names(est_sample)
-  
   VCOV <- object$Sigma
   N <- length(object$model.org$residuals) 
-  if (N == 0) {
-    N <- ""
-  }
+  if (N == 0) N <- ""
   
   if (!is.null(alt_sample_size)) {
     if (is.null(sample_size)) {
-      stop("Restriktor Error: Please provide the original sample size(s) using the argument `sample_size`. This information is required to rescale the variance-covariance matrix (VCOV).", call. = FALSE)
+      stop("Restriktor Error: Please provide the original sample size(s) using the argument `sample_size`.")
     }
     N <- sample_size
     VCOV <- VCOV * N / alt_sample_size
     N <- alt_sample_size
+    
+    object <- goric(est_sample, VCOV = VCOV, 
+                    sample.nobs = N[1], hypotheses = hypos, 
+                    comparison = object$comparison, type = object$type, 
+                    control = control, ...)
   }
   
   if (is.null(quant)) {
@@ -323,63 +353,50 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
   
-  # parallel backend
-  if (is.null(cl)) {
-    cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
-  }
-  on.exit(parallel::stopCluster(cl))
-  
-  parallel::clusterEvalQ(cl, {
-    library(restriktor) 
-  })
-  
-  # Export required variables to cluster nodes
-  parallel::clusterExport(cl, c("VCOV", "hypos", "pref_hypo", "type",
-                                "comparison", "control"), 
-                          envir = environment())
-  
-  # Use pbapply::pblapply with arguments
-  pbapply::pboptions(type = "timer", style = 1, char = ">")
+  pref_hypo <- which.max(object$result[, 7])
+  pref_hypo_name <- object$result$model[pref_hypo]
   
   nr_iter <- iter
-  nr_es  <- nrow(pop_est) #length(pop_est) / n_coef
-  parallel_function_results <- list()  
+  nr_es  <- nrow(pop_est)
+  parallel_function_results <- list()
   
+  # Voortgangsbalk (optioneel)
+  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
+  
+  progressr::with_progress({
+    p <- progressr::progressor(along = seq_len(nr_iter * nr_es))  
+    
     for (teller_es in seq_len(nr_es)) {
-    cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
-    
-    est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
-    
-    # Update the est variable within the cluster nodes
-    parallel::clusterExport(cl, c("est"), envir = environment())
-    
-    # main function
-    # Create a function that wraps parallel_function
-    wrapper_function_asymp <- function(i) {
-      parallel_function_asymp(i, 
-                              est = est, VCOV = VCOV,
-                              hypos = hypos, pref_hypo = pref_hypo, 
-                              comparison = comparison, type = "gorica",
-                              control = control, ...)
+      cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
+      
+      est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
+      colnames(est) <- names(est_sample)
+      
+      # Wrapper function for future_lapply
+      wrapper_function_asymp <- function(i) {
+        p()  # Update the progress
+        parallel_function_asymp(i, 
+                                est = est, VCOV = VCOV,
+                                hypos = hypos, pref_hypo = pref_hypo, 
+                                comparison = comparison, type = "gorica",
+                                control = control, ...)
+      }
+      
+      name <- paste0("pop_est = ", rnames[teller_es])
+      parallel_function_results[[name]] <- future_lapply(
+        seq_len(nr_iter),
+        wrapper_function_asymp,
+        future.seed = TRUE  # Ensures safe and reproducible random number generation
+      )
     }
-    
-    name <- paste0("pop_est = ", rnames[teller_es])
-    parallel_function_results[[name]] <- pbapply::pblapply(seq_len(nr_iter), 
-                                                           wrapper_function_asymp, 
-                                                           cl = cl)
-  }
+  })
   
-  # get benchmark results
-  benchmark_results <- get_results_benchmark(parallel_function_results, 
-                                             object, pref_hypo, 
-                                             pref_hypo_name, quant, 
-                                             names_quant, nr_hypos)
+  benchmark_results <- get_results_benchmark(parallel_function_results, object, pref_hypo, 
+                                             pref_hypo_name, quant, names_quant, nr_hypos)
   
-  
-  # compute error probability
   error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
                                             est = est_sample, VCOV, control, ...)
-
+  
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
@@ -388,18 +405,17 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_est = pop_est, 
     pop_VCOV = VCOV,
     pref_hypo_name = pref_hypo_name, 
-    error_prob_pref_hypo_name = error_prob,
+    error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
     benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
     benchmarks_difLL = benchmark_results$benchmarks_difLL,
     benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
-    combined_values = benchmark_results$combined_values
+    combined_values = benchmark_results$combined_values,
+    iter = iter
   )
   
   class(OUT) <- c("benchmark_asymp", "benchmark", "list")
   return(OUT)
 }
-
-

@@ -17,32 +17,32 @@
                   quant = NULL, iter = 1000, 
                   control = list(convergence_crit = 1e-03, 
                                  chunk_size = 1e4), 
-                  ncpus = 1, cl = NULL, seed = NULL, \ldots)
+                  ncpus = 1, seed = NULL, \ldots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
                   alt_sample_size = NULL, quant = NULL, iter = 1000, 
                   control = list(convergence_crit = 1e-03, 
                                  chunk_size = 1e4), 
-                  ncpus = 1, cl = NULL, seed = NULL, \ldots)
+                  ncpus = 1, seed = NULL, \ldots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
                             color = TRUE, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           percentiles = c(0.05, 0.95), x_lim = c(), 
+                           percentiles = NULL, x_lim = c(), log_scale = FALSE,
                            alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
                            distr_grid = FALSE, ...)
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
-  \item{model_type}{If "means" (default), the model parameters relect (adjusted) means, else
-  model_type = "asymp". See details for more information about \code{asymp}.}
+  \item{model_type}{If "means", the model parameters relect (adjusted) means, else
+  model_type = "asymp" (default). See details for more information about \code{asymp}.}
   \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
-  By default, it benchmarks ES = 0 and the observed Cohen's f.}
+  By default, it benchmarks ES = 0 (no-effect) and the observed Cohen's f.}
   \item{pop_est}{A 1 x k vector or an n x k matrix of population 
-  estimates to benchmark. By default, all estimates are set to zero and the 
-  observed estimates from the sample are used.}
+  estimates to benchmark. By default, all estimates are set to zero (no-effect) 
+  and the observed estimates from the sample are used.}
   \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
   between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 
   same as \code{c(1, 0, -1)}, as the consecutive relative differences are 1 in 
@@ -64,26 +64,29 @@
   want to use a different sample size from the one in the data. This can be used, 
   for example, to see the values to which the GORIC(A) weights will converge 
   (and thus to see the maximum value of the weights).}
-  \item{quant}{Quantiles for benchmarking results. Defaults 2.5\%, 5\%, 35\%, 50\%, 65\%, 95\%, and 97.5\%}
+  \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
   \item{iter}{The number of iterations for benchmarking. Defaults to \code{1000}.}
   \item{control}{A list of control parameters including \code{convergence_crit} 
   and \code{chunk_size}. For more information, see \link{goric}.}
-  \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.}
-  \item{cl}{A cluster object for parallel processing. If not supplied, a cluster 
-  on the local machine is created for the duration of the \code{benchmark} call.}
+  \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
+  See details for more information.}
   \item{seed}{A seed for random number generation.}
   \item{output_type}{A character vector specifying the type of output to print 
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
   \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
-  and \code{"ld"} (likelihood difference). Defaults to \code{"all"} for print and \code{"gw"} for plot.}
+  and \code{"ld"} (likelihood difference). Defaults to \code{"rgw"} for print and \code{"rgw"} for plot.}
   \item{color}{If TRUE, the output will include ANSI color coding. Set \code{color = FALSE} 
   when using this function in R Markdown documents to avoid rendering issues with color codes.}
   \item{alpha}{Alpha refers to the opacity of a geom. Values of alpha range from 0 to 1, with lower values corresponding to more transparent colors.}
   \item{nrow_grid}{An integer value representing the number of rows in the grid layout.}
   \item{ncol_grid}{An integer value representing the number of columns in the grid layout.}
   \item{distr_grid}{If TRUE, the facet_grid function is used to create a grid of separate plots for each effect-size (estimates).}
-  \item{percentiles}{A numeric vector specifying the lower and upper percentiles. Defaults to \code{0.025, 0.975}.}
+  \item{percentiles}{A numeric vector specifying the percentiles to be shown. By default 
+  the percentiles are inherited from the quantiles used for benchmarking, see \code{quant}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
+  \item{log_scale}{logical, If TRUE, The x-axis is transformed using a base-10 logarithmic scale.
+        This transformation adjusts the way the data is visualized on the x-axis, but does not 
+        alter the underlying data values themselves.}
   \item{\ldots}{See \link{goric}.}
 }
 
@@ -97,7 +100,6 @@
   the distribution of the parameter estimates tends to a normal distribution, 
   allowing us to utilize the multivariate normal distribution for benchmarking.
 
-
   \code{benchmark_means} benchmarks the group means of a given GORIC(A) object 
   by evaluating various population effect sizes and comparing the observed 
   group means against these benchmarks.
@@ -110,6 +112,19 @@
   
   \code{plot.benchmark} generates density plots for benchmark analyses of objects 
   of class \code{benchmark}. 
+  
+  The benchmark function leverages the \pkg{future} package for parallel processing, 
+  allowing users to speed up computations by distributing tasks across multiple 
+  cores or machines. If the user does not specify a parallelization plan using 
+  \code{future::plan()}, the package will choose an appropriate strategy based 
+  on the user's operating system. Specifically, on Windows, the package defaults 
+  to using \code{multisession}, which creates separate R sessions for each 
+  parallel task. On Unix-like systems (such as Linux and macOS), the package 
+  defaults to \code{multicore}, which uses forked R processes to avoid the 
+  overhead of setting up separate R sessions.
+  
+  The \code{plan()} must be specified before running the benchmark function, e.g.,
+  \code{future::plan(future::multisession, workers = ncpus)}
   }
 
 \value{
@@ -158,6 +173,8 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
 # by default: ES = 0 \& ES = observed ES
 # In practice you want to increase the number of iterations (default = 1000).
 \donttest{
+# multisession supports windows machines
+# future::plan(future::multisession, workers = ncpus)
 benchmark_results_mean <- benchmark(fit_goric, iter = 10, model_type = "means")
 print(benchmark_results_mean)
 }

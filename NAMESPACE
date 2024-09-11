@@ -25,13 +25,10 @@ importFrom("lavaan",
            lavaan # conTestD
            )
 
-importFrom("glue",
-           glue)
-
-
 importFrom("mvtnorm",
            #rmvnorm, 
-           dmvnorm)
+           dmvnorm,
+           pmvnorm)
 
 # truncated multivariate normal
 importFrom("tmvtnorm",
@@ -49,14 +46,13 @@ importFrom("MASS",
            psi.huber,
            ginv)
 
-importFrom("pbapply", 
-           pblapply,
-           pboptions)
+#importFrom("pbapply", 
+#           pblapply,
+#           pboptions)
 
-
-importFrom("ic.infer",
+#importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
-           ic.weights)
+#           ic.weights)
 
 importFrom("utils", combn, packageDescription, menu, capture.output)
 
@@ -81,13 +77,17 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, ma
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
            scale_fill_brewer, scale_color_manual, coord_cartesian,
            scale_linetype_manual, geom_vline, geom_ribbon, scale_x_continuous,
-           facet_grid)
+           facet_grid, scale_x_log10, stat_density, after_stat, scale_fill_manual)
 
 importFrom("scales", brewer_pal)
 
 importFrom("gridExtra", grid.arrange)
 
+importFrom("future", plan)
 
+importFrom("future.apply", future_lapply)
+
+importFrom("progressr", progressor, with_progress, handlers)
 # export ordinary functions defined in this package
 export(restriktor)
 export(conLM.lm, conRLM.rlm, conGLM.glm, conMLM.mlm)
@@ -160,6 +160,9 @@ S3method(goric, lavaan)
 S3method(goric, numeric)
 S3method(goric, CTmeta)
 S3method(goric, rma)
+S3method(goric, nlmerMod)
+S3method(goric, glmerMod)
+S3method(goric, lmerMod)
 
 S3method(evSyn_est, list)
 S3method(evSyn_LL, list)

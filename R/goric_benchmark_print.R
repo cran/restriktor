@@ -10,10 +10,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   
   ldots <- list(...)
   
+  # number of failed bootstrap runs
+  empty_lists_count <- sapply(x$combined_values$gw_combined, function(x) { 
+    attr(x, "empty_lists_count") } )
+  #max_empty_lists_count <- max(empty_lists_count)
+  
   model_type <- class(x)[1]
   goric_type <- toupper(x$type)
   pref_hypo <- x$pref_hypo_name
-  error_prob_pref_hypo <- x$error_prob_pref_hypo_name
+  error_prob_pref_hypo <- x$error_prob_pref_hypo
   error_prob_pref_hypo <- 
     if (error_prob_pref_hypo < 0.001) {
       "<.001"
@@ -81,9 +86,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   } else {
     if (group_size != "") {
       cat(sprintf("Sample Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
-    } else {
-      cat("\n")
-    }
+    } 
     cat(sprintf("Number of Parameters: %s%s%s\n", green, ngroups, reset))
   }
   if (inherits(x, "benchmark_means")) {
@@ -96,6 +99,22 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   }
   #cat(strrep("-", 70), "\n")
   cat("\n")
+  
+# -------------------------------------------------------------------------
+  R <- x$iter
+  succesful_draws <- R - empty_lists_count
+  if (any(succesful_draws < R)) { 
+    cat("Number of requested bootstrap draws:", R, "\n")
+    for (i in seq_along(succesful_draws)) {
+      cat(sprintf("  Number of successful bootstrap draws for %*s: %s\n", 
+                  10, names(succesful_draws)[i], succesful_draws[i]))
+    }
+    text_msg <- paste("Advise: If a substantial number of bootstrap draws fail to converge,", 
+                      "it is advisable to increase the number of bootstrap iterations.")
+    message("---\n", text_msg)
+  }
+# -------------------------------------------------------------------------
+
   
   # Normalize output_type to lowercase
   output_type <- tolower(output_type)
