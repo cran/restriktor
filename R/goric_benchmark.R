@@ -4,8 +4,6 @@ benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
   
-  args <- list(...)
-  
   model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
     stop("Restriktor ERROR: Please specify if you want to benchmark means or asymptotic result ",
@@ -32,12 +30,18 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL, 
                             group_size = NULL, alt_group_size = NULL, 
                             quant = NULL, iter = 1000, 
-                            control = list(convergence_crit = 1e-03, 
-                                           chunk_size = 1e4), 
+                            control = list(), 
                             ncpus = 1, seed = NULL, ...) {
   
   
   # group_size is needed to rescale vcov based on alt_group_size.
+  
+  if (length(control) == 1) {
+    control <- object$objectList[[1]]$control
+  }
+  
+  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
+  penalty_factor <- object$penalty_factor
   
   # Check:
   if (!inherits(object, "con_goric")) {
@@ -76,7 +80,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (is.null(object$model.org)) {
     # Number of subjects per group
     if (is.null(group_size)) {
-      stop("Restriktor Error: please specify the sample-size, e.g. group_size = 100.", 
+      stop("Restriktor Error: please specify the group-size, e.g. group_size = 100.", 
            call. = FALSE)
     } else if (length(group_size) == 1) {
       N <- rep(group_size, ngroups)
@@ -127,10 +131,20 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     var_e_adjusted <- result_adjust_variance$var_e / N
     VCOV <- diag(var_e_adjusted, length(group_means))
     
-    object <- goric(group_means, VCOV = VCOV, 
-                    sample.nobs = N[1], hypotheses = hypos, 
-                    comparison = object$comparison, type = object$type, 
-                    control = control, ...)
+    if (object$type == "goric") {
+      type <- "gorica"
+    } else if (object$type == "goricc") {
+      type <- "goricac"
+    } else {
+      type <- object$type
+    }
+    
+    object <- try(goric(group_means, VCOV = VCOV, 
+                    sample_nobs = N[1], hypotheses = hypos, 
+                    comparison = object$comparison, type = type, 
+                    control = control, mix_weights = mix_weights, 
+                    penalty_factor = penalty_factor, 
+                    Heq = FALSE, ...))
   }
   
   
@@ -209,6 +223,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                 object = object, ngroups = ngroups, 
                                 sample = sample, control = control, 
                                 form_model_org = form_model_org, 
+                                mix_weights = mix_weights, 
+                                penalty_factor = penalty_factor,
                                 ...)
       }
       
@@ -262,10 +278,16 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
 
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
-                            alt_sample_size = NULL, quant = NULL, iter = 1000, 
-                            control = list(convergence_crit = 1e-03, 
-                                           chunk_size = 1e4), 
+                            alt_sample_size = NULL, quant = NULL, iter = 1000,
+                            control = list(), 
                             ncpus = 1, seed = NULL, ...) {
+  
+  if (length(control) == 1) {
+    control <- object$objectList[[1]]$control
+  }
+  
+  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
+  penalty_factor <- object$penalty_factor
   
   # Check if object is of class con_goric
   if (!inherits(object, "con_goric")) {
@@ -312,7 +334,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   if (ncol(pop_est) != length(est_sample)) {
     stop(paste("Restriktor Error: The number of columns in pop_est (", ncol(pop_est), 
-               ") does not match the length of est_sample (", length(est_sample), ").", sep=""))
+               ") does not match the length of est_sample (", length(est_sample), ").", sep = ""))
   }
   
   rnames <- row.names(pop_est)
@@ -340,10 +362,19 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     VCOV <- VCOV * N / alt_sample_size
     N <- alt_sample_size
     
+    if (object$type == "goric") {
+      type <- "gorica"
+    } else if (object$type == "goricc") {
+      type <- "goricac"
+    } else {
+      type <- object$type
+    }
+    
     object <- goric(est_sample, VCOV = VCOV, 
-                    sample.nobs = N[1], hypotheses = hypos, 
-                    comparison = object$comparison, type = object$type, 
-                    control = control, ...)
+                    sample_nobs = N[1], hypotheses = hypos, 
+                    comparison = comparison, type = type, 
+                    control = control, mix_weights = mix_weights, 
+                    penalty_factor = penalty_factor, Heq = FALSE, ...)
   }
   
   if (is.null(quant)) {
@@ -374,12 +405,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       
       # Wrapper function for future_lapply
       wrapper_function_asymp <- function(i) {
-        p()  # Update the progress
+        p() # Update the progress
         parallel_function_asymp(i, 
                                 est = est, VCOV = VCOV,
                                 hypos = hypos, pref_hypo = pref_hypo, 
                                 comparison = comparison, type = "gorica",
-                                control = control, ...)
+                                control = control, mix_weights = mix_weights, 
+                                penalty_factor = penalty_factor, Heq = FALSE, ...)
       }
       
       name <- paste0("pop_est = ", rnames[teller_es])

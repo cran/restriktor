@@ -2,6 +2,11 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
                                level = 0.95, 
                                goric = "goric", ...) {
   z <- object
+  ldots <- list(...)
+  
+  if (is.null(ldots$penalty_factor)) {
+    ldots$penalty_factor <- 2
+  }
   
   if (!inherits(z, "restriktor")) {
     stop("object of class ", sQuote(class(z)), " is not supported.")
@@ -174,7 +179,11 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   if (goric != "none" && !(attr(wt.bar, "method") == "none")) {
     Amat_meq_PT <- PT_Amat_meq(Amat, meq)
     ans$PT_Amat <- Amat_meq_PT$PT_Amat
-    ans$PT_meq  <- Amat_meq_PT$PT_meq
+    if (nrow(Amat) == meq) {
+      ans$PT_meq <- nrow(ans$PT_Amat)
+    } else {
+      ans$PT_meq  <- Amat_meq_PT$PT_meq
+    }
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
@@ -210,13 +219,12 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     }
     
     if (inherits(z, c("conLM", "conMLM"))) {
-      ans$goric <- -2*(ll - PT) 
+      ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
         PT <- PT - 1
       }
-      ans$goric <- -2*ll / (1 + 2*PT)
-      #-2*(llm - PTm)
+      ans$goric <- -2*ll / (1 + ldots$penalty_factor*PT) #-2*ll / (1 + 2*PT)
     }
     attr(ans$goric, "type")    <- goric
     attr(ans$goric, "penalty") <- PT

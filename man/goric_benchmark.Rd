@@ -15,18 +15,16 @@
   benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
                   group_size = NULL, alt_group_size = NULL, 
                   quant = NULL, iter = 1000, 
-                  control = list(convergence_crit = 1e-03, 
-                                 chunk_size = 1e4), 
+                  control = list(), 
                   ncpus = 1, seed = NULL, \ldots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
                   alt_sample_size = NULL, quant = NULL, iter = 1000, 
-                  control = list(convergence_crit = 1e-03, 
-                                 chunk_size = 1e4), 
+                  control = list(), 
                   ncpus = 1, seed = NULL, \ldots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
-                            color = TRUE, ...)
+                            hypo_rate_threshold = 1, color = TRUE, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
                            percentiles = NULL, x_lim = c(), log_scale = FALSE,
@@ -35,7 +33,7 @@
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
-  \item{model_type}{If "means", the model parameters relect (adjusted) means, else
+  \item{model_type}{If "means", the model parameters reflect (adjusted) means, else
   model_type = "asymp" (default). See details for more information about \code{asymp}.}
   \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
@@ -66,15 +64,18 @@
   (and thus to see the maximum value of the weights).}
   \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
   \item{iter}{The number of iterations for benchmarking. Defaults to \code{1000}.}
-  \item{control}{A list of control parameters including \code{convergence_crit} 
-  and \code{chunk_size}. For more information, see \link{goric}.}
+  \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
+  hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
+  that exceeds this threshold. Defaults to 1.}
+  \item{control}{A list of control parameters.For more information, see details \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
   See details for more information.}
   \item{seed}{A seed for random number generation.}
   \item{output_type}{A character vector specifying the type of output to print 
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
-  \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
-  and \code{"ld"} (likelihood difference). Defaults to \code{"rgw"} for print and \code{"rgw"} for plot.}
+  \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of log-likelihood values), 
+  and \code{"ld"} (log-likelihood difference). Defaults to \code{"rgw"} for print 
+  and \code{"rgw"} for plot.}
   \item{color}{If TRUE, the output will include ANSI color coding. Set \code{color = FALSE} 
   when using this function in R Markdown documents to avoid rendering issues with color codes.}
   \item{alpha}{Alpha refers to the opacity of a geom. Values of alpha range from 0 to 1, with lower values corresponding to more transparent colors.}
@@ -126,6 +127,7 @@
   The \code{plan()} must be specified before running the benchmark function, e.g.,
   \code{future::plan(future::multisession, workers = ncpus)}
   }
+
 
 \value{
   \code{benchmark_means} and \code{benchmark_asymp} return a list of 

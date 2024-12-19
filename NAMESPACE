@@ -54,7 +54,7 @@ importFrom("MASS",
            #nchoosek, NOT EXPORTED!
 #           ic.weights)
 
-importFrom("utils", combn, packageDescription, menu, capture.output)
+importFrom("utils", packageDescription, capture.output, tail)
 
 importFrom("stats", coef, df.residual, dnorm, fitted,
            formula, frequency, median, model.matrix,
@@ -103,7 +103,7 @@ export(conTestC.restriktor)
 export(conTest_ceq.conLM, conTest_ceq.conRLM, conTest_ceq.conGLM)
 export(conTestD)
 export(bootstrapD)
-export(goric)
+export(goric, goric.lavaan)
 export(calculate_IC_weights)
 export(summary.restriktor)
 export(conTest_summary.restriktor)
@@ -164,10 +164,6 @@ S3method(goric, nlmerMod)
 S3method(goric, glmerMod)
 S3method(goric, lmerMod)
 
-S3method(evSyn_est, list)
-S3method(evSyn_LL, list)
-S3method(evSyn_ICvalues, list)
-S3method(evSyn_ICweights, list)
 S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)
@@ -177,3 +173,4 @@ S3method(print, goric_ICw)
 
 S3method(print, benchmark)
 S3method(plot, benchmark)
+S3method(print, benchmark_plot)

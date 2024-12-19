@@ -1,10 +1,13 @@
 \name{evSyn}
 \alias{evSyn}
 \alias{evsyn}
-\alias{evSyn_est.list}
-\alias{evSyn_ICweights.list}
-\alias{evSyn_ICvalues.list}
-\alias{evSyn_LL.list}
+\alias{evSyn_est}
+\alias{evSyn_LL}
+\alias{evSyn_ICvalues}
+\alias{evSyn_ICweights}
+\alias{evSyn_ICratios}
+\alias{evSyn_gorica}
+\alias{evSyn_escalc}
 \alias{print.evSyn}
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
@@ -16,19 +19,37 @@ hypotheses from multiple studies that may use diverse designs to investigate the
 same central theory.}
 
 \usage{
-evSyn(object, \ldots)
+# I try to guess the input type.
+evSyn(object, input_type = NULL, \ldots)
 
-\method{evSyn_est}{list}(object, \ldots, VCOV = list(), hypotheses = list(),
-      type = c("equal", "added", "average"), 
-      comparison = c("unconstrained", "complement", "none"),
-      hypo_names = c())
+# input: Parameter estimates and covariance matrix
+evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
+          type = c("added", "equal", "average"), 
+          comparison = c("unconstrained", "complement", "none"),
+          hypo_names = c())
 
-\method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added", "average"),
-      hypo_names = c())
+# input: Log-likelihood and penalty values
+evSyn_LL(object, \ldots, PT = list(), type = c("added", "equal", "average"),
+         hypo_names = c())
 
-\method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = c())
+# input: GORIC(A), ORIC, AIC values
+evSyn_ICvalues(object, \ldots, hypo_names = c())
 
-\method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = c())
+# input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
+# model probabilities
+evSyn_ICweights(object, \ldots, priorWeights = NULL, hypo_names = c())
+
+# input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
+# (Bayesian) posterior model probabilities
+evSyn_ICratios(object, \ldots, priorWeights = NULL, hypo_names = c())
+
+# input: result from the goric() function
+# Note that this is a wrapper function for evSyn_LL.
+evSyn_gorica(object, \dots, type = c("added", "equal", "average"), hypo_names = c())
+
+# input: Result from the escalc() function from the metafor package. 
+# Note that this is a wrapper function for evSyn_est.
+evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -36,7 +57,7 @@ evSyn(object, \ldots)
 
 \method{print}{summary.evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)  
 
-\method{plot}{evSyn}(x, \dots)
+\method{plot}{evSyn}(x, output_type = "gorica_weights", xlab = NULL, \dots)
 }
 
 \arguments{
@@ -45,9 +66,27 @@ evSyn(object, \ldots)
       \item a list of vectors with (standardized) parameter estimates (the \code{VCOV} argument is required);   
       \item a list of vectors with log-likelihood values (the \code{PT} argument is required);
       \item a list of vectors with GORIC(A) weights;
+      \item a list of vectors with ratio of GORIC(A) weights;
       \item a list of vectors with GORIC(A) values;
+      \item a list of objects of class goric;
+      \item a data.frame of class escalc from the \pkg{metafore} package;
     }
   }
+  
+  \item{input_type}{
+  \code{character} Specifies the type of input provided to the function. Valid options are:
+  \describe{
+    \item{\code{"est_vcov"}}{Indicates that the input consists of estimates and covariance matrices. Invokes the \code{evSyn_est()} function.}
+    \item{\code{"ll_pt"}}{Indicates that the input consists of log-likelihoods and penalty values. Invokes the \code{evSyn_LL()} function.}
+    \item{\code{"icweights"}}{Indicates that the input consists of information criterion (IC) weights. Invokes the \code{evSyn_ICweights()} function.}
+    \item{\code{"icratios"}}{Indicates that the input consists of IC weights ratios. Invokes the \code{evSyn_ICratios()} function.}
+    \item{\code{"icvalues"}}{Indicates that the input consists of IC values. Invokes the \code{evSyn_ICvalues()} function.}
+    \item{\code{"gorica"}}{Indicates that the input is of class goric from the \code{goric} function. Invokes the \code{evSyn_gorica()} function.}
+    \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package. Invokes the \code{evSyn_escalc()} function.}
+  }
+  If \code{input_type} is \code{NULL}, the function attempts to infer the input type based on the structure of the \code{object} and other arguments.
+}
+  
   \item{VCOV}{a list of covariance matrices of the (standardized) parameter estimates 
   of interest.} 
   
@@ -65,8 +104,7 @@ evSyn(object, \ldots)
   However, if a different set of hypotheses is applied to each study, the syntax 
   structure should be as follows: hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22)).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
-  section below.
-}
+  section below.}
 
   \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
   included in the set of models. If "\code{complement}" then the restricted object 
@@ -82,11 +120,38 @@ evSyn(object, \ldots)
   \item{hypo_names}{character vector for labelling the hypotheses. By default the
   names are set to H1, H2, \ldots}
 
+  \item{output_type}{if "\code{gorica_weights}", a plot with the cumulative goric(a)
+  weights and goric(a) weights per study is displayed. If "\code{ll_weights}"
+  a plot with the cumulative log-likelihood weights and log-likelihood weights 
+  per study is displayed.}
+
+  \item{xlab}{a vector specifying custom labels for the x-axis. The length of 
+  the vector must match the number of studies in the dataset. If not provided, 
+  the x-axis labels default to a sequence from 1 to the number of studies.}
+
+  \item{data}{an object of class "escalc" from the \pkg{metafor} package.}
+
+  \item{outcome_col}{an optional column name in \code{data} containing the outcome 
+  identifiers for each observation within a cluster. If \code{NULL}, the function 
+  assumes the outcome identifier is "yi" (one outcome variable).}
+
+  \item{yi_col}{a character string specifying the column in \code{data} that 
+  contains the outcome values for each observation. The default is \code{"yi"} 
+  (one outcome variable).}
+
+  \item{vi_cols}{a character vector specifying the columns in \code{data} that 
+  contain the variance and covariance values for each observation. The default is 
+  \code{"vi"} (one outcome variable).}
+
+  \item{cluster_col}{a character string specifying the column in \code{data} that 
+  contains the cluster identifier. Observations within the same cluster should 
+  share the same value in this column. The default is \code{"trial"}, other usual
+  suspects are \code{"study"} and \code{"author"}.}
+
   \item{digits}{the number of significant digits to use when printing.}
 
   \item{\ldots}{This depends on the class of the object.}
 }
-
 
 \details{
 In the \strong{added-evidence} approach, evidence from each study or dataset is 

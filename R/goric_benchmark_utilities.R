@@ -188,11 +188,12 @@ compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
   return(means_pop_all)  
 }
 
-
+#undebug(restriktor:::parallel_function_means)
 # this function is called from the goric_benchmark_anova() function
 parallel_function_means <- function(i, N, var_e, means_pop, 
                                     hypos, pref_hypo, object, ngroups, sample, 
-                                    control, form_model_org, ...) {  
+                                    control, form_model_org, mix_weights, 
+                                    penalty_factor, ...) {  
   # Sample residuals
   epsilon <- rnorm(sum(N), sd = sqrt(var_e))
   
@@ -237,6 +238,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
             comparison = object$comparison,
             type = object$type,
             control = control, 
+            mix_weights = mix_weights,
             ...)
     },
     error = function(e) {
@@ -264,7 +266,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
+    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
     ld  = ld # loglik difference
   )
 }
@@ -272,7 +274,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 
 # this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
-                                    type, control, ...) {  
+                                    type, control, mix_weights, penalty_factor, ...) {  
   results_goric <- tryCatch(
     {
       # Voer de goric functie uit
@@ -281,6 +283,8 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
             comparison = comparison,
             type = type,
             control = control, 
+            mix_weights = mix_weights,
+            penalty_factor = penalty_factor,
             ...)
     },
     error = function(e) {
@@ -306,44 +310,12 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
   out <- list(
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
+    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
     ld  = ld
   )
   
   return(out)
 }
-
-
-# parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
-#                                     type, control, ...) {  
-#   
-#   results_goric <- try(goric(est[i, ], VCOV = VCOV,
-#                              hypotheses = hypos,
-#                              comparison = comparison,
-#                              type = type,
-#                              control = control, 
-#                              ...), silent = TRUE
-#   )
-#   
-#   if (inherits(results_goric, "try-error")) {
-#     warning("Error encountered: ", attr(results_goric, "condition")$message)
-#     return(NULL)
-#   }
-# 
-#   # Return the relevant results
-#   ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
-#   ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
-#   names(ld) <- ld_names
-#   
-#   out <- list(
-#     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
-#     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
-#     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-#     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
-#     ld  = ld
-#   )
-#   return(out)
-# }
 
 
 # Define a function to extract and combine values from all elements in each pop_es list
@@ -540,6 +512,10 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
 }
 
 
+calculate_hypothesis_rate <- function(x, q = 1) {
+  return(colMeans(x > q))
+}
+
 
 # called by the benchmark.print() function
 print_section <- function(header, content_printer, nchar, text_color, reset) {
@@ -554,12 +530,16 @@ print_section <- function(header, content_printer, nchar, text_color, reset) {
 
 
 format_value <- function(value) {
-  if (abs(value) >= 1000 || abs(value) <= 0.001 && value != 0) {
+  if (is.na(value)) {
+    return("")  
+  }
+  if (abs(value) >= 1000 || (abs(value) <= 0.001 && value != 0)) {
     return(sprintf("%.3e", value))  
   } else {
     return(sprintf("%.3f", value))  
   }
 }
+
 
 # called by the benchmark.print() function
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
@@ -579,56 +559,6 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   print(formatted_df, row.names = TRUE, quote = FALSE)
   cat("\n")
 }
-
-
-# print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
-#   # Extract population effect estimate
-#   if (model_type == "benchmark_asymp") {
-#     pop_es_value <- gsub("pop_est = ", "", pop_es)
-#   } else {
-#     pop_es_value <- gsub("pop_es = ", "", pop_es)  
-#   }
-#   cat(sprintf("Population effect estimates = %s%s%s\n", text_color, pop_es_value, reset))
-#   
-#   # Function to format and right-align values
-#   format_value <- function(value) {
-#     formatted <- sprintf("%.3f", as.numeric(value))
-#     return(formatted)
-#   }
-#   
-#   # Apply formatting to the dataframe
-#   formatted_values <- apply(df, c(1, 2), format_value)
-#   formatted_df <- as.data.frame(formatted_values)
-#   rownames(formatted_df) <- rownames(df)
-#   colnames(formatted_df) <- colnames(df)
-#   
-#   # Function to print the dataframe with aligned columns and rows
-#   print_aligned_df <- function(df) {
-#     # Voeg de rijnamen als een aparte kolom toe
-#     #df_with_row_names <- cbind(Row = rownames(df), df)
-#     
-#     # Vind de maximale breedte van elke kolom inclusief kolomnamen
-#     col_widths <- sapply(df, function(col) max(nchar(as.character(col))))
-#     col_widths <- pmax(col_widths, nchar(names(df)))
-#     
-#     # Formatteer de kolomnamen
-#     colnames_formatted <- mapply(format, names(df), width = col_widths, SIMPLIFY = FALSE)
-#     
-#     # Print de kolomnamen
-#     cat(paste(unlist(colnames_formatted), collapse = "  "), "\n")
-#     
-#     # Print de rijen met de rijnamen
-#     for (i in 1:nrow(df)) {
-#       row_values <- mapply(format, as.character(df[i, ]), width = col_widths, SIMPLIFY = FALSE)
-#       cat(paste(unlist(row_values), collapse = "  "), "\n")
-#     }
-#   }
-#   
-#   # Gebruik de functie om de geformatteerde data frame af te drukken
-#   print_aligned_df(formatted_df)
-#   cat("\n")
-# }
-
 
 
 print_formatted_matrix <- function(mat, text_color, reset) {

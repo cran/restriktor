@@ -37,6 +37,15 @@ calculate_model_comparison_metrics <- function(x) {
     goric_weights_without_unc <- c(goric_weights_without_unc, NA)
   } else { goric_weights_without_unc <- NULL }
   
+  mn_heq_idx <- grep("Heq", modelnames)
+  if (length(modelnames) > 2 && length(mn_heq_idx) > 0 && 
+      which.max(goric_weights) != mn_heq_idx) {
+    delta_goric = x$goric[-mn_heq_idx] - min(x$goric[mn_heq_idx])
+    goric_weights_without_heq = exp(0.5 * -delta_goric) / 
+      sum(exp(0.5 * -delta_goric))
+    goric_weights_without_heq <- c(NA, goric_weights_without_heq)
+  } else { goric_weights_without_heq <- NULL }
+  
   rownames(goric_rw) = modelnames
   rownames(penalty_rw) = modelnames
   rownames(loglik_rw) = modelnames
@@ -48,6 +57,7 @@ calculate_model_comparison_metrics <- function(x) {
               penalty_weights = penalty_weights,
               goric_weights = goric_weights,
               goric_weights_without_unc = goric_weights_without_unc,
+              goric_weights_without_heq = goric_weights_without_heq,
               loglik_rw = loglik_rw,
               penalty_rw = penalty_rw,
               goric_rw = goric_rw)
@@ -150,4 +160,97 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
   return(wt.bar)
 }
 
+
+
+# Functie om rijen te filteren uit de parameter tabel
+# extract_constraints <- function(parameter_table, hypotheses) {
+#   # 1. Verwijder alle spaties in hypotheses
+#   clean_hypotheses <- gsub("\\s+", "", hypotheses)
+#   
+#   # 2. Definieer de model- en constraint-operators
+#   model_operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
+#   constraint_operators <- c("<", ">", "=", "==", ":=")
+#   
+#   # 3. Splits de hypotheses in afzonderlijke constraints
+#   subconstraints <- unlist(strsplit(clean_hypotheses, ",|;|&|\\n"))
+#   
+#   # Functie om model-onderdelen te parseren
+#   parse_model <- function(expression) {
+#     for (op in model_operators) {
+#       if (grepl(op, expression, fixed = TRUE)) {
+#         parts <- unlist(strsplit(expression, op, fixed = TRUE))
+#         if (length(parts) == 2) {
+#           return(list(lhs = parts[1], op = op, rhs = parts[2]))
+#         }
+#       }
+#     }
+#     return(NULL)
+#   }
+#   
+#   # Parse alle subconstraints
+#   parsed_constraints <- lapply(subconstraints, function(constraint) {
+#     for (c_op in constraint_operators) {
+#       if (grepl(c_op, constraint, fixed = TRUE)) {
+#         terms <- unlist(strsplit(constraint, c_op, fixed = TRUE))
+#         if (length(terms) == 2) {
+#           return(list(lhs = parse_model(terms[1]), 
+#                       c_op = c_op, 
+#                       rhs = parse_model(terms[2])))
+#         }
+#       }
+#     }
+#     return(list(lhs = parse_model(constraint), c_op = NULL, rhs = NULL))
+#   })
+#   
+#   # Filter parameter_table voor elke constraint
+#   results <- lapply(parsed_constraints, function(pc) {
+#     if (!is.null(pc$lhs) && !is.null(pc$rhs)) {
+#       # Filter met beide zijden van de constraint
+#       parameter_table[
+#         (parameter_table$lhs == pc$lhs$lhs & parameter_table$op == pc$lhs$op & parameter_table$rhs == pc$lhs$rhs) |
+#           (parameter_table$lhs == pc$rhs$lhs & parameter_table$op == pc$rhs$op & parameter_table$rhs == pc$rhs$rhs), ]
+#     } else if (!is.null(pc$lhs)) {
+#       # Filter alleen met lhs (indien rhs ontbreekt)
+#       parameter_table[
+#         parameter_table$lhs == pc$lhs$lhs & parameter_table$op == pc$lhs$op & parameter_table$rhs == pc$lhs$rhs, ]
+#     } else {
+#       NULL
+#     }
+#   })
+#   
+#   # Combineer alle resultaten
+#   result <- do.call(rbind, results)
+#   
+#   return(result)
+# }
+# 
+# 
+# # Voorbeeldgebruik
+# hypotheses <- "dem60=~y2>dem65=~y6, dem60=~y3>dem65=~y7,dem60=~y4>dem65=~y8"
+# 
+# model1 <- '
+#     A =~ Ab + Al + Af + An + Ar + Ac 
+#     B =~ Bb + Bl + Bf + Bn + Br + Bc 
+# '
+# # Use the lavaan sem function to execute the confirmatory factor analysis
+# fit1 <- sem(model1, data = sesamesim, std.lv = TRUE)
+# 
+# parameter_table <- parameterTable(fit1)
+# hypotheses1 <-
+#   " A=~Ab > .6 & A=~Al > .6 & A=~Af > .6 & A=~An > .6 & A=~Ar > .6 & A=~Ac >.6 & 
+# B=~Bb > .6 & B=~Bl > .6 & B=~Bf > .6 & B=~Bn > .6 & B=~Br > .6 & B=~Bc >.6"
+# 
+# 
+# model2 <- '
+#     A  =~ Ab + Al + Af + An + Ar + Ac 
+#     B =~ Bb + Bl + Bf + Bn + Br + Bc
+# 
+#     A ~ B + age + peabody
+# '
+# fit2 <- sem(model2, data = sesamesim, std.lv = TRUE)
+# hypotheses2 <- "A~B > A~peabody = A~age = 0; 
+#                A~B > A~peabody > A~age = 0; 
+# A~B > A~peabody > A~age > 0"
+# parameter_table <- parameterTable(fit2)
+# extract_constraints(parameter_table, hypotheses2)
 

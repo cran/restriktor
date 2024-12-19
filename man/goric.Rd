@@ -19,8 +19,8 @@ comparable to the Akaike weights.
 
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = NULL, 
-      VCOV = NULL, sample_nobs = NULL, type = "goric", 
-      control = list(), debug = FALSE)
+      VCOV = NULL, sample_nobs = NULL, type = "goric",
+      penalty_factor = 2, Heq = FALSE, control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
@@ -48,8 +48,7 @@ comparable to the Akaike weights.
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
-      %threshold = 3, \dots)
-
+      
 \method{coef}{con_goric}(object, \dots)
 }
 
@@ -71,10 +70,9 @@ comparable to the Akaike weights.
   
   \item{x}{an object of class \code{con_goric}.}
 
-  \item{\ldots}{this depends on the class of the object. Note that, the 
-  objects have to be of the same class. If object is of class \code{lavaan}, the 
-  standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
-  See details for more information.
+  \item{\ldots}{this depends on the class of the object. If object is of class 
+  \code{lavaan}, the standardized or unstandardized vcov can be used, using 
+  setting \code{standardized = TRUE}. See details for more information.
   
   \emph{Options for calculating the chi-bar-square weights:}
 
@@ -104,11 +102,16 @@ comparable to the Akaike weights.
   error. For more information about constructing the matrix \eqn{R} and \eqn{rhs} 
   see details.}
   
-  \item{comparison}{if "\code{unconstrained}" the unconstrained model is 
-  included in the set of models. If "\code{complement}" then the restricted object 
-  is compared against its complement. Note that the complement can only be computed 
-  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
-  compared against the models provided by the user.}
+  \item{comparison}{The default behavior depends on the number of user-specified 
+  order-restricted hypotheses. If a single hypothesis is specified, it is compared 
+  against its complement by default. When multiple order-restricted hypotheses are 
+  specified, the unconstrained model is added as a safeguard to the set of hypotheses.
+
+  These default settings can be overridden. Use "\code{unconstrained}" to include 
+  the unconstrained model in the set of models. Use "\code{complement}" to compare 
+  the order-restricted object against its complement; note that the complement can 
+  only be computed for one model/hypothesis at a time for now. If "\code{none}" 
+  is chosen, the model is compared only against those provided by the user.}
   
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
   \code{type = "gorica"} or \code{type = "goricac"}.}
@@ -121,6 +124,18 @@ comparable to the Akaike weights.
   information criterion value is computed. If \code{"gorica"} the 
   log-likihood is computed using the multivariate normal distribution 
   function.}
+  
+  \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
+  (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty). 
+  By default, GORIC(A) uses a penalty factor of 2, but penalty factor allows this 
+  to be customized. Higher values of penalty factor place a stronger emphasis on 
+  model simplicity, helping to prevent overfitting by penalizing complex models 
+  more heavily.}
+  
+  \item{Heq}{If \code{TRUE}, the null hypothesis is added to the set of models. 
+  This means that all inequality constraints are replaced with equality constraints, 
+  effectively testing the hypothesis that the parameters satisfy exact equality 
+  rather than inequality. Defaults to \code{FALSE}.}
   
   \item{missing}{the default setting for objects of class "lm" is listwise:
   all cases with missing values are removed from the data before the analysis. This
@@ -273,14 +288,16 @@ hypotheses = list(H1 = h1, H2 = h2)
 hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 
 # lavaan object syntax:
-# we need labels (here a, b and c) to define our hypothesis.
-model.lav <- "y ~  1 + a*x1 + b*x2 + c*x3 + x4"
+# the recommended option for objects of class lavaan is to use labels (here a, b and c) 
+# to define our hypothesis.
+model.lav <- "y ~ 1 + a*x1 + b*x2 + c*x3 + x4"
 # fit lavaan model, for example
 # library(lavaan)
 # fit.lav <- sem(model, data = DATA)
 # define hypothesis syntax
 hypotheses = list(h1 = 'a > b > c')
-
+# if needed absolute values can be used.
+hypotheses = list(h1 = 'abs(a) > abs(b) > abs(c)')
 
 library(MASS)
 ## lm

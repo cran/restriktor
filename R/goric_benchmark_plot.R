@@ -34,18 +34,18 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   } else if (output_type == "rgw") {
     DATA <- x$combined_values$rgw_combined
     sample_value <- x$benchmarks_ratio_goric_weights[[1]][, 1, drop = FALSE]
-    xlabel <- paste0("Ratio-", goric_type, "-Weights")
+    xlabel <- paste("Ratio", goric_type, "Weights")
     title <- paste0("Benchmark: Ratio-", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rlw") {
     DATA <- x$combined_values$rlw_combined  
     sample_value <- x$benchmarks_ratio_ll_weights[[1]][, 1, drop = FALSE]
-    xlabel <- "Ratio-likelihood-weights"
-    title <- paste0("Benchmark: Ratio-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
+    xlabel <- "Ratio Log-likelihood Weights"
+    title <- paste0("Benchmark: Ratio-Log-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "ld") {
     DATA <- x$combined_values$ld_combined
     sample_value <- x$benchmarks_difLL[[1]][, 1, drop = FALSE]
-    xlabel <- "Log-likelihood difference"
-    title <- paste0("Benchmark: Log-likelihood Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
+    xlabel <- "Log-likelihood Difference"
+    title <- paste0("Benchmark: Log-likelihood-Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
   }
   
   # -------------------------------------------------------------------------
@@ -135,10 +135,17 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                                percentiles = percentiles,
                                log_scale = log_scale)
   
-  combined_plots <- do.call(grid.arrange, c(plot_list, ncol = ncol_grid, nrow = nrow_grid))
+  combined_plots <- list(
+    plots = plot_list,
+    ncol = ncol_grid,
+    nrow = nrow_grid
+  )
   
-  return(invisible(combined_plots))
+  #combined_plots <- do.call(gridExtra::arrangeGrob, c(plot_list, ncol = ncol_grid, nrow = nrow_grid))
+
+  class(combined_plots) <- c("benchmark_plot", class(combined_plots))
   
+  return(combined_plots)
 }
 
 
@@ -174,7 +181,8 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   
   # 
   percentile_values <- as.numeric(df_subset[, paste0(percentiles*100, "%")][1, ])
-  percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))
+  #percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))
+  percentile_labels <- paste0(percentiles * 100, "th Percentile = ", sprintf("%.3f", percentile_values))
   formatted_sample_value <- sprintf("Sample Value = %.3f", unique(df_subset$sample_value)[1])
   
   
@@ -279,6 +287,11 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   }
   
   if (!is.null(x_lim) && length(x_lim) == 2) {
+    if (log_scale & !x_lim[1] > 0) {
+      x_lim[1] <- .001
+      message(paste("Warning: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
+              "Adjusting x_lim[1] to 0.001. You can manually specify a value greater than 0 for x_lim[1] if needed."))
+    }
     p <- p + coord_cartesian(xlim = x_lim)
    } 
   #  else {
@@ -314,3 +327,17 @@ plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL,
   }
   return(plot_list)
 }
+
+# avoid printing the plot 
+print.benchmark_plot <- function(x, ...) {
+  plot_list <- x$plots
+  ncol <- x$ncol
+  nrow <- x$nrow
+  
+  # Arrange the plots and draw them
+  grid::grid.newpage()
+  do.call(gridExtra::grid.arrange, c(plot_list, ncol = ncol, nrow = nrow))
+  #grid::grid.draw(x)
+}
+
+
