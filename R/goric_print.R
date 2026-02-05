@@ -145,26 +145,32 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   overlap_hypo <- unique(unlist(overlap_hypo))
   overlap_hypo <- overlap_hypo[overlap_hypo != ""]
   
+  best_hypo <- which.max(x$result[, 7])
+  best_hypo_name <- x$result$model[best_hypo]
+  best_hypo_overlap <- best_hypo_name %in% overlap_hypo
+  
   # check if the log-likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
   if (length(overlap_hypo) > 0 & !x$Heq) {
     message("---\nNote: Hypotheses ", paste0(sQuote(overlap_hypo), collapse = " and "), 
             " have equal log-likelihood values. This indicates that they overlap and",
-            " that the ratio of their GORIC(A) weights reached its maximum. If of", 
-            " interest, we recommend evaluating the overlap versus its complement.", 
-            " Run vignette(\"Guidelines_GORIC_output\") in your console for more", 
-            " information and an example.")
+            " that the ratio of their GORIC(A) weights reached its maximum.")
+  }
+  if (best_hypo_overlap) {
+    message("Since the best hypothesis overlaps with one or more other hypotheses,", 
+" we recommend evaluating the overlap (or best hypothesis) vs. its complement.", 
+          " Run vignette(\"Guidelines_GORIC_output\") in your console for more", 
+          " information and an example.")
   }
 
   if (comparison == "unconstrained" && length(df$model) == 2 && 
       # If comparison = "complement" and ceq only, than comparison is set to unconstrained internally.
       nrow(x$objectList[[1]]$constraints) != x$objectList[[1]]$neq) { 
     message("---\nAdvise: Are you certain you wish to assess the order-restricted hypothesis", 
-            " in comparison to the unconstrained one, rather than its complement?")
+            " in comparison to the unconstrained one, rather than its complement?", 
+            " Note that the order-restricted hypothesis overlaps (is contained in) the unconstrained,",
+            " while it does not overlap with its complement (except for their boundary).")
   }
 
-  best_hypo <- which.max(x$result[, 7])
-  best_hypo_name <- x$result$model[best_hypo]
-  best_hypo_overlap <- best_hypo_name %in% overlap_hypo
   
   if (length(df$model) > 1) {
     cat("\nConclusion:\n")
@@ -176,14 +182,16 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
       support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
       cat(paste0("The order-restricted hypothesis ", sQuote(objectnames[1]), 
-                 " has ", support_ratio, " times more support than its complement.\n\n"))
+                 " has ", support_ratio, " times more support than its complement."))
     } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
       result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than its complement.",
-      "That is, the complement has", sprintf("%.2f", as.numeric(numbers[2]) / as.numeric(numbers[1])), "times more support than", sQuote(objectnames[1]), "\n\n")      
+      cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
+          "has less support (namely, ", result, 
+          "times more support) than its complement.",
+      "That is, the complement has", sprintf("%.2f", as.numeric(numbers[2]) / as.numeric(numbers[1])), "times more support than", sQuote(objectnames[1]))      
     } else {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the complement have equal support:", result, "\n\n")      
+      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the complement have equal support:", result)      
     }
     # cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
     #            " has ", support_ratio, " times more support than its complement.\n\n"))
@@ -203,34 +211,34 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         message <- paste0("- The complement is the best in the set, as it has the highest GORIC(A) weight.",
                           " Since the complement has a higher GORIC(A) weight than the equality-restricted", 
                           " hypothesis Heq, we can now inspect the relative support for the complement",
-                          " against the order-restricted hypothesis ", modelnames[modelnames != "complement"], ":\n\n")
+                          " against the order-restricted hypothesis ", modelnames[modelnames != "complement"], ":")
       } else if (best_hypo_name != "complement") {
         message <- paste0("- The order-restricted hypothesis ", modelnames[modelnames != "complement"], " is the best",
                           " in the set, as it has the highest GORIC(A) weight. Since it has a higher GORIC(A) weight",
-                          " than the equality-restricted hypothesis Heq, we can now inspect the relative support for", 
-                          " the order-restricted hypothesis against its complement:\n\n")
+                          " than the equality-restricted hypothesis (Heq), we can now inspect the relative support for", 
+                          " the order-restricted hypothesis against its complement:")
       } 
 
       for (i in seq_along(best_hypos_rest)) {
-        message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
+        message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_without_heq_best_hypo[i], 
                           " times more supported than ", sQuote(best_hypos_rest[i]))
 
         # Voeg punt toe, behalve als het de laatste hypothese is
         if (i < length(best_hypos_rest)) {
-          message <- paste0(message, ".\n")
+          message <- paste0(message, ".")
         } else {
           message <- paste0(message, ".")
         }
       }
       cat(paste0(message, "\n"))
     } else {
-      message <- paste0("- The null-hypothesis Heq is the best in the set,", 
-                        " as it has the highest GORIC(A) weight. As a result, the order-restricted", 
-                        " hypotheses are considered as equality constraints.\n\n")
+      message <- paste0("\n- The equality-constrained hypothesis (Heq) is the best in the set,", 
+                        " as it has the highest GORIC(A) weight.")
       
-      message <- paste0(message, "- Since the order-restricted hypotheses are weak,",
-                        " inspecting their relative support is not meaningful.")
+      message <- paste0(message, "\n- Since the order-restricted hypotheses contain", 
+                        " the equality-constrained hypothesis (Heq), inspecting", 
+                         " the relative support is not meaningful.")
       
       cat(paste0(message, "\n"))
     }
@@ -249,7 +257,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than the unconstrained.\n\n")
     } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
       result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than the unconstrained.\n\n")      
+      cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
+          "has less support (namely, ", result, 
+          "times more support) than the unconstrained.\n\n")
     } else {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the unconstrained have equal support:", result, "\n\n")      
@@ -269,42 +279,42 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "unconstrained")])
       # Step 1: Check if the best hypothesis in the set is not weak
       message <- paste0("- The order-restricted hypothesis ", sQuote(best_hypo_name), 
-                        " is the best in the set, as it has the highest GORIC(A) weight.\n\n")
+                        " is the best in the set, as it has the highest GORIC(A) weight.")
       
       # Step 2: if not weak, compare it against all other hypotheses in the set
-      message <- paste0(message, "- Since ", sQuote(best_hypo_name), " has a higher", 
+      message <- paste0(message, "\n- Since ", sQuote(best_hypo_name), " has a higher", 
       " GORIC(A) weight than the unconstrained hypothesis, it is not considered weak.", 
       " We can now inspect the relative support for ", sQuote(best_hypo_name), " against",
-      " the other order-restricted hypotheses:\n\n")
+      " the other order-restricted hypotheses:")
       
       for (i in seq_along(best_hypos_rest)) {
-        if (best_hypos_rest[i] %in% overlap_hypo) {
+        if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
           # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
-          message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
+          message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
                             goric_rw_without_unc_best_hypo[i], 
                             " times more supported than ", sQuote(best_hypos_rest[i]), 
-                            " (This relative support reached its maximum, see Note.)")
+                            " (This relative support reached its maximum, see Note)")
         } else {
           # Als er geen overlap is, geef normale relatieve support
-          message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
+          message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
                             goric_rw_without_unc_best_hypo[i], 
                             " times more supported than ", sQuote(best_hypos_rest[i]))
         }
         
         # Voeg punt toe, behalve als het de laatste hypothese is
         if (i < length(best_hypos_rest)) {
-          message <- paste0(message, ".\n")
+          message <- paste0(message, ".")
         } else {
           message <- paste0(message, ".")
         }
       }
       cat(paste0(message, "\n"))
     } else {
-      message <- paste0("- The unconstrained hypothesis is the best in the set,", 
+      message <- paste0("\n- The unconstrained hypothesis is the best in the set,", 
                         " as it has the highest GORIC(A) weight. As a result, the order-restricted", 
-                        " hypotheses are considered weak.\n\n")
+                        " hypotheses are considered weak.")
 
-      message <- paste0(message, "- Since all the order-restricted hypotheses are weak,",
+      message <- paste0(message, "\n- Since all the order-restricted hypotheses are weak,",
                         " inspecting their relative support is not meaningful.")
             
       #cat(paste0("---\n", message, "\n"))
@@ -328,7 +338,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_best_hypo[i], 
                           " times more supported than ", sQuote(best_hypos_rest[i]), 
-                          " (This relative support reached its maximum, see Note.)")
+                          " (This relative support reached its maximum, see Note)")
       } else {
         # Als er geen overlap is, geef normale relatieve support
         message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
@@ -369,7 +379,14 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
   } 
   if (x$penalty_factor != 2) {
-    message(sprintf("\nNote that a penalty factor of %s (default is 2) is used in the calculation of the %s value, that is -2 x log-likelihood + penalty_factor x penalty",
+    message(sprintf("\nrestriktor Message: Note that a penalty factor of %s (default is 2) is used in the calculation of the %s value, that is -2 x log-likelihood + penalty_factor x penalty",
                     x$penalty_factor, x$type))
   }
 }
+
+# TO DO print ook de warnings hier nog eens, anders mis je die ms
+#       Kijk of messages en/of warnings en zag dan onderaan dat die er zijn en geef dan de code om die te zien!
+# Ws zeg dat er messgaes zijn en zeg hoe die in te zien.
+# vang ze dus op en geef ze niet direct (niet tijdens runnen en niet bij print).
+#
+# TO DO veel output (bvb warnings, conclusion) is doorlopende tekst zonder 'line breaks' en dus in de pdf zie je maar de helft; het is beter om line breaks toe te voegen, zodat de output nooit meer is dan 76 karakters.

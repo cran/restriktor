@@ -88,12 +88,14 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   #cat(strrep("=", 70), "\n")
   cat(paste0(blue, "Benchmark Results", reset), "\n")
   cat(strrep("-", 70), "\n")
+  # TO DO Geef ook het aantal iteraties (iter) wat gebruikt is.
   cat(sprintf("Preferred Hypothesis: %s%s%s\n", green, pref_hypo, reset))
   cat(sprintf("Error probability Preferred Hypothesis vs. Complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
   } else {
-    if (group_size != "") {
+    #if (group_size != "") {
+    if (!is.null(group_size)) {
       cat(sprintf("Sample Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
     } 
     cat(sprintf("Number of Parameters: %s%s%s\n", green, ngroups, reset))
@@ -149,6 +151,9 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
         hypothesis_rate = x$hypothesis_rate[[pop_es_name]] # x$hypothesis_rate
       )
     }
+    # TO DO nu bij No-effect ook hypothesis_rate maar die zouden we dacht ik niet meer laten zien omdat het verwarrend is wat het betekent
+    #       daarnaast heeft anders echt beschrijving nodig, want het is steun info hypo onder NE en dan in gehele set?
+    #       Ws overleggen of dit handig is - nu ineens denk ik dat het zo gek nog niet is :-).
     
     if (any(NE_names)) {
       x$benchmarks_ratio_goric_weights[NE_names][[1]] <- 

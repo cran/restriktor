@@ -4,7 +4,9 @@ summary.evSyn <- function(object, ...) {
   
   ans <- list(
     type = x$type,
-    n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
+    type_ev = x$type_ev,
+    #n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
+    n_studies = x$n_studies, 
     hypotheses = x$hypotheses,
     GORICA_weight_m = x$GORICA_weight_m,
     GORICA_m = x$GORICA_m,
@@ -23,7 +25,7 @@ summary.evSyn <- function(object, ...) {
     Cumulative_PT <- apply(x$PT_m[,, drop = FALSE], 2, cumsum)  
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x$PT_m), 
                             dimnames = list(sequence, colnames(x$PT_m)))
-    if (x$type %in% c("equal", "average")) {
+    if (x$type_ev %in% c("equal", "average")) {
       Cumulative_PT <- Cumulative_PT / seq_len(ans$n_studies)
     } 
     ans$Cumulative_PT <- Cumulative_PT
@@ -33,14 +35,22 @@ summary.evSyn <- function(object, ...) {
   
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     fcgw <- t(x[["Cumulative_GORICA_weights"]]["Final", ])
-    rownames(fcgw) <- "GORICA weights"
+    if (x$type == "gorica") {
+      rownames(fcgw) <- "GORICA weights"
+    } else if (x$type == "goricac") {
+      rownames(fcgw) <- "GORICAC weights"
+    }
     colnames(fcgw)  <- colnames(x[["Cumulative_GORICA_weights"]])
     final <- rbind(final, fcgw)
   }
   
   if (!is.null(x[["Cumulative_GORICA"]])) {
     fcgv <- t(x[["Cumulative_GORICA"]]["Final", ])
-    rownames(fcgv) <- "GORICA values"
+    if (x$type == "gorica") {
+      rownames(fcgv) <- "GORICA values"
+    } else if (x$type == "goricac") {
+      rownames(fcgv) <- "GORICAC values"
+    }
     final <- rbind(final, fcgv)
   }
   
@@ -74,6 +84,9 @@ summary.evSyn <- function(object, ...) {
   class(ans) <- "summary.evSyn"
   
   ans
+  
+  # TO DO x$messageAdded
+
 }
 
 
@@ -82,19 +95,23 @@ summary.evSyn <- function(object, ...) {
 print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # added or equal approach
-  type <- x$type
+  type_ev <- x$type_ev
   # number of studies
   S <- x$n_studies
   
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
-  cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
+  cat(paste(type_ev, "Evidence Synthesis results:\n"), sep = "")
   
   indentation <- "    "  # Four spaces for indentation
   
   cat("\nStudy-specific results:\n")
   
   if (!is.null(x$GORICA_weight_m)) {
-    cat("\n    GORICA weights:\n")  
+    if (x$type == "gorica") {
+      cat("\n    GORICA weights:\n")
+    } else if (x$type == "goricac") {
+      cat("\n    GORICAC weights:\n") 
+    }
     formatted_gw <- apply(x$GORICA_weight_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -103,7 +120,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   
   if (!is.null(x$GORICA_m)) {
-    cat("\n    GORICA values:\n")  
+    if (x$type == "gorica") {
+      cat("\n    GORICA values:\n")
+    } else if (x$type == "goricac") {
+      cat("\n    GORICAC values:\n")
+    }
     formatted_gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -141,7 +162,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   cat("\nCumulative results:\n")
   
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {
-    cat("\n    GORICA weights:\n")  
+    if (x$type == "gorica") {
+      cat("\n    GORICA weights:\n")
+    } else if (x$type == "goricac") {
+      cat("\n    GORICAC weights:\n") 
+    } 
     formatted_cgw <- apply(x$Cumulative_GORICA_weights[1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -150,7 +175,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   
   if (!is.null(x[["Cumulative_GORICA"]])) {
-    cat("\n    GORICA values:\n")  
+    if (x$type == "gorica") {
+      cat("\n    GORICA values:\n")
+    } else if (x$type == "goricac") {
+      cat("\n    GORICAC values:\n")
+    }  
     formatted_cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -196,7 +225,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   cat("\nFinal ratios:\n")
   
   if (!is.null(x$Final_ratio_GORICA_weights)) {
-    cat("\n    GORICA weights:\n")  
+    if (x$type == "gorica") {
+      cat("\n    GORICA weights:\n")
+    } else if (x$type == "goricac") {
+      cat("\n    GORICAC weights:\n") 
+    } 
     formatted_frgw <- apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_frgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -215,4 +248,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   cat("\n")
   message(x$messages$mix_weights)
+  
+  # # TO DO
+  # if (!is.null(x$messageAdded)) {
+  #   cat("\n")
+  #   message(x$messageAdded)
+  # }
+  
 }

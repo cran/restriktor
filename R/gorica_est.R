@@ -13,8 +13,6 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   
   # timing
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
-  # store call
-  #mc <- match.call()
   # rename for internal use
   Amat <- constraints
   bvec <- rhs 
@@ -24,11 +22,11 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
                                     sqrt(.Machine$double.eps), 
                                     control$tol)] <- 0L
-  Sigma <- VCOV
+  #Sigma <- VCOV
   # number of parameters
   p <- length(b.unrestr)
   # unrestricted log-likelihood
-  ll.unrestr <- dmvnorm(rep(0, p), sigma = Sigma, log = TRUE)
+  ll.unrestr <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
   
   if (debug) {
     print(list(loglik.unc = ll.unrestr))
@@ -40,7 +38,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   # deal with constraints
   if (!is.null(constraints)) {
     restr.OUT <- con_constraints(object, 
-                                 VCOV        = Sigma,
+                                 VCOV        = VCOV,
                                  est         = b.unrestr,
                                  constraints = Amat, 
                                  bvec        = bvec, 
@@ -48,10 +46,11 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                  mix_weights = mix_weights,
                                  se          = "none",
                                  debug       = debug)  
-    # a list with useful information about the restriktions.}
+    
+    # a list with useful information about the restrictions.
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
-    # and the imposed restriktions.}
+    # and the imposed restrictions.
     parTable <- restr.OUT$parTable
     # constraints matrix
     Amat <- restr.OUT$Amat
@@ -103,7 +102,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
                 loglik      = ll.unrestr, 
-                Sigma       = Sigma,
+                VCOV        = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -113,7 +112,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   } else {
     # compute constrained estimates using quadprog
     out.solver <- con_solver_gorica(est  = b.unrestr, 
-                                    VCOV = Sigma, 
+                                    VCOV = VCOV, 
                                     Amat = Amat, 
                                     bvec = bvec, 
                                     meq  = meq)
@@ -125,7 +124,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
     
-    ll.restr <- dmvnorm(c(b.unrestr - b.restr), sigma = Sigma, log = TRUE)
+    ll.restr <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
     
     OUT <- list(CON         = CON,
                 #call        = mc,
@@ -134,7 +133,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.restr,
                 loglik      = ll.restr, 
-                Sigma       = Sigma,
+                Sigma       = VCOV, # TO DO Ergens Sigma nodig?
+                VCOV        = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -159,7 +159,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   if (mix_weights == "pmvnorm") {
     if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
       messages$mix_weights_rank <- paste(
-        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+        "\nrestriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
         "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
         "For more information see ?restriktor.\n"
       )
@@ -168,7 +168,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   } 
 
   ## determine level probabilities
-  wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = Sigma, 
+  wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = VCOV, 
                                    mix_weights = mix_weights, seed = seed, 
                                    control = control, verbose = verbose, ...)
   attr(wt.bar, "method") <- mix_weights
@@ -230,36 +230,68 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
 con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # create empty list
   out <- list()
+  
+  # TO DO gorica obv lavaan labels?
+
+  
   # get parameter table
-  unstandardized_parTable <- parTable(x)
-  unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
-  standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)$est.std
+  paramTable <- parTable(x)
+  if (standardized) {
+    # Note: sometimes stand. and unstand. not of same size, 
+    #       so, if not needed, then do not add stand. estimates.
+    paramTable$est.std <- standardizedSolution(x)['est.std']$est.std
+  }
+  indices_fixed <- which(paramTable$free == 0L & paramTable$op != ":=")
+  paramTable <- paramTable[-indices_fixed,]
+  #
+  # Determine output w.r.t. labeled & defined estimates
+  labels_free <- paramTable$label
+  # Check
+  if (length(labels_free) == 0) {
+    error_message <- paste0(
+      "\nrestriktor ERROR: Labeled and/or defined parameters are needed to proceed. \n", 
+      "The names/labels should correspond to those used in the hypothesis/-es."
+    )
+    stop(error_message)
+  }
+  nr_defined <- sum(paramTable$op == ":=")
+  # Note that defined parameters are always based on labeled parameters.
+  #
+  ## remove any duplicate labels
+  # TO DO When does this happen - is it needed?
+
   
-  # combine unstandardized and standardized parameter estimates  
-  parameter_table <- cbind(unstandardized_parTable, est.std = standardized_parTable)
+  # Extract (un)standardized estimates
+  if (standardized) {
+    out$estimate <- paramTable$est.std
+  } else { # so, if unstandardized
+    # Note: sometimes stand. and unstand. not of same size, 
+    #       so, if not needed, then do not add stand. estimates.
+    out$estimate <- paramTable$est
+  }
+  names(out$estimate) <- labels_free
   
-  # Only user-specified labels
-  parameter_table <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
-  # remove any duplicate labels
-  parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  # use (un)standardized parameter estimates
-  out$estimate <- 
-    if (standardized) {
-      parameter_table$est.std
-    } else { 
-      parameter_table$est
-    }
-  names(out$estimate) <- parameter_table$label
+  
   ## extract (un)standardized VCOV
-  out$VCOV <- 
-    if (standardized) {
-      lavInspect(x, "vcov.std.all")
-    } else {
-      lavInspect(x, "vcov")
+  if (standardized) {
+    if (nr_defined > 0) {
+      # Matrix containing the joint variance covariance matrix of both the standardized estimated model parameters and the user-defined parameters (using the := operator). 
+      # Standardization is done with respect to both observed and latent variables.
+      out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")
+    } else { # if (nr_defined == 0) {
+      out$VCOV <- lavInspect(x, "vcov.std.all")
+    } 
+  } else {
+    if (nr_defined > 0) {
+      # Matrix containing the joint variance covariance matrix of both the estimated model parameters and the user-defined parameters (using the := operator). 
+      out$VCOV <- lavInspect(x, "vcov.def.joint")
+    } else { # if (nr_defined == 0) {
+      out$VCOV <- lavInspect(x, "vcov")
     }
-  # remove not used columns of VCOV
-  out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
+  }
+  colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
+
+  out$rhs <- paramTable$rhs
   
-  out$rhs <- parameter_table$rhs
   out
 }

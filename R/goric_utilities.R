@@ -6,6 +6,127 @@ coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }
 
+coef_named_vector <- function(x, VCOV = NULL, ...)  {
+  # TO DO wat als vcov niet bestaat of nog niet matrix (maar bijv dpo)?
+  # ms zelfs suppressWarnings(vcov(...)) gebruiken dan
+  if (!is.vector(coef(x))) {
+    # Some fit objects (like mlm) render matrices (>1 x >1 matrices).
+    # So, if not a vector, make it one, with names(!) coming from vcov.
+    est <- as.vector(coef(x))
+    if (is.null(VCOV)) {
+      names(est) <- rownames(vcov(x))
+      # TO DO dit werkt niet, er is niet alleen : maar ook _ en laatste mag ws niet (runt iig niet)
+    } else { 
+      # TO DO eigenlijk nog checken of rownames bestaan
+      names(est) <- rownames(VCOV)
+    }
+    message("\nrestriktor Message: The coefficients from the fitted model have been converted into a vector. ",
+            "The coefficient names are taken from the row names of the covariance matrix (vcov). ",
+            "Use these names when specifying hypotheses. ",
+            "Note: replace any ':' characters with '.' in hypothesis labels.")
+  } else {
+    est <- coef(x)
+  }
+  return(est)
+}
+
+check_sample_nobs <- function(sample_nobs, ...)  {
+  if (length(sample_nobs) > 1) { 
+    # Probably group sizes, then sample size is sum of group sizes
+    sample_nobs <- sum(sample_nobs)
+    message(paste0(
+    "\nrestriktor Message: The argument 'sample_nobs' contains more than one value. ",
+    "It is assumed that these represent group sizes; their total (", sample_nobs, 
+    ") is used as the overall sample size."
+    ))
+  }
+  return(sample_nobs)
+}
+
+check_N_with_sample_nobs <- function(N, sample_nobs, ...)  {
+  # Check on N
+  if (!is.null(sample_nobs) && sample_nobs != N) {
+    message(paste0(
+    "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+    ") differs from the sample size derived from the fitted model (", N, "). ",
+    "The model-based value is used instead."
+    ))
+  }
+  return(N)
+}
+
+VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
+  sample_nobs <- check_sample_nobs(sample_nobs)
+  N <- NULL 
+  if (!is.na(model.org$df.residual) && !is.null(model.org$df.residual) && !is.null(model.org$rank)) {
+    # Use cov.mx based on N not N-k, such that output goric and gorica are the same
+    # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
+    N_min_k <- model.org$df.residual
+    N <- N_min_k + model.org$rank
+    VCOV <- vcov(model.org) * N_min_k / N
+  } else if (!is.null(model.org$x) && !is.null(model.org$rank)) { 
+    # Note: In rlm object model.org$df.residual is NA
+    # Use cov.mx based on N not N-k, such that output goric and gorica are the same
+    # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
+    N <- dim(model.org$x)[1] 
+    N_min_k <- N - model.org$rank
+    VCOV <- vcov(model.org)*N_min_k/N
+  } else {
+    VCOV <- vcov(model.org)
+    # TO DO Voor als dpoMatrix (kan dat hierboven ook gebeuren?), dan ws:
+    #as.matrix(suppressWarnings(vcov(object))) # Behoud dit zijn namen ook?
+    message(
+    "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+    "'vcov()'. This represents the biased (restricted) sample covariance matrix, ",
+    "not the unbiased version based on the full sample size ('N')."
+    )
+# TO DO als pdf van Rmd file maak, dan loopt dit door....
+    # is dan ms toch een Rmd instelling....
+    }
+  # Check on N
+  if(!is.null(N) && sample_nobs != N) {
+    message(paste0(
+    "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+    ") differs from the sample size determined from the fitted model (", N, "). ",
+    "The unbiased covariance matrix is computed using the model-based value."
+    ))
+  }
+  
+  return(VCOV)
+}
+
+message.VCOV <- function(...)  {
+  message(
+  "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+  "'vcov()'. This is the biased (restricted) sample covariance matrix, ",
+  "not the unbiased version based on the total sample size ('N')."
+  )
+} 
+
+message.VCOVvb <- function(...)  {
+  message(
+  "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+  "the 'vb' argument from the metafor package."
+  )
+}
+
+check.type <- function(type, class, ...)  {
+  if (type == "goric") {
+    message("\nrestriktor Message: object of class ", class, " is only supported for",
+            "type = 'gorica(c)'. The GORICA will be used, not the the GORIC.")
+    type = "gorica"
+  } else if (type == "goricc") {
+    message("\nrestriktor Message: object of class ", class, " is only supported for", 
+            "type = 'gorica(c)'. The GORICAC will be used, not the the GORICC.")
+    type = "goricac"
+  } else if (!c(type %in% c("gorica", "goricac"))) {
+    message("\nrestriktor Message: object of class ", class, " is only supported for",
+            "type = 'gorica(c)'. The GORICA will be used.")
+    type = "gorica"
+  } 
+  return(type)
+}
+
 calculate_model_comparison_metrics <- function(x) {
   modelnames <- as.character(x$model)
   ## Log-likelihood

@@ -1,11 +1,11 @@
-conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls", 
-                        psi = psi.bisquare, scale.est = c("MAD", "Huber", "proposal 2"), 
-                        k2 = 1.345, method = c("M", "MM"), 
-                        wt.method = c("inv.var", "case"), 
-                        maxit = 20, acc = 1e-04, test.vec = "resid", 
+conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
+                        psi = psi.bisquare, scale.est = c("MAD", "Huber", "proposal 2"),
+                        k2 = 1.345, method = c("M", "MM"),
+                        wt.method = c("inv.var", "case"),
+                        maxit = 20, acc = 1e-04, test.vec = "resid",
                         lqs.control = NULL, Amat, bvec, meq,
                         tol = sqrt(.Machine$double.eps)) {
-
+  
   irls.delta <- function(old, new) sqrt(sum((old - new)^2)/max(1e-20, 
                                                                sum(old^2)))
   irls.rrxwr <- function(x, w, r) {
@@ -59,9 +59,10 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
   else wt <- NULL
   if (method == "M") {
     scale.est <- match.arg(scale.est)
-    if (!is.function(psi)) 
+    if (!is.function(psi)) {
       psi <- get(psi, mode = "function")
-    arguments <- list(...)
+    }
+    arguments <- list(...) 
     if (length(arguments)) {
       pm <- pmatch(names(arguments), names(formals(psi)), 
                    nomatch = 0L)
@@ -95,7 +96,7 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     psi <- psi.bisquare
     
     if (any(bvec != 0)) {
-      stop("Restriktor ERROR: the rhs may only contain zeros (for now).")
+      stop("restriktor ERROR: the rhs may only contain zeros (for now).", call. = FALSE)
     }
     
     if (meq > 0L) {
@@ -105,26 +106,26 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
                          bvec[1:meq], meq = meq)$solution
       out.qp[abs(out.qp) < tol] <- 0L
       idx.qp <- !out.qp %in% 0L
-      temp <- do.call("lqs",
+      temp <- do.call(MASS::lqs,
                       c(list(x = x[ , idx.qp, drop = FALSE], y, intercept = FALSE, 
                              method = "S", k0 = 1.54764), lqs.control)) 
       coef  <- temp$coefficients
       resid <- temp$residuals
       scale <- temp$scale  
     } else {
-      temp <- do.call("lqs", c(list(x, y, intercept = FALSE, 
-                                    method = "S", k0 = 1.548), lqs.control))
+      temp <- do.call(MASS::lqs, c(list(x, y, intercept = FALSE, 
+                                    method = "S", k0 = 1.54764), lqs.control))
       coef <- temp$coefficients
       resid <- temp$residuals
     }
-    if (length(arguments <- list(...))) 
-        if (match("c", names(arguments), nomatch = 0L)) {
-          c0 <- arguments$c
-          if (c0 > 1.54764) 
-            formals(psi)$c <- c0
-          else warning("'c' must be at least 1.548 and has been ignored")
-        }
-      scale <- temp$scale
+    if (length(arguments <- list(...)))
+       if (match("c", names(arguments), nomatch = 0L)) {
+         c0 <- arguments$c
+         if (c0 > 1.54764)
+           formals(psi)$c <- c0
+         else warning("'c' must be at least 1.54764 and has been ignored")
+       }
+    scale <- temp$scale
   } else {
     stop("'method' is unknown")
   }

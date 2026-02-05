@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Rebecca M. Kuiper and Yves Rosseel" />
+
+<meta name="date" content="2026-02-05" />
+
+<title>How to evaluate theory-based hypotheses in a lavaan model using the GORICA</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">How to evaluate theory-based hypotheses in
+a lavaan model using the GORICA</h1>
+<h4 class="author">Rebecca M. Kuiper and Yves Rosseel</h4>
+<h4 class="date">2026-02-05</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#packages" id="toc-packages"><span class="toc-section-number">1</span> Packages</a></li>
+<li><a href="#example-1-confirmatory-factor-analysis" id="toc-example-1-confirmatory-factor-analysis"><span class="toc-section-number">2</span> Example 1: Confirmatory Factor
+Analysis</a></li>
+<li><a href="#example-2-multiple-group-cfa" id="toc-example-2-multiple-group-cfa"><span class="toc-section-number">3</span> Example 2: Multiple Group CFA</a>
+<ul>
+<li><a href="#measurement-invariance" id="toc-measurement-invariance"><span class="toc-section-number">3.1</span> Measurement invariance</a></li>
+<li><a href="#hypothesis-evaluation-using-gorica" id="toc-hypothesis-evaluation-using-gorica"><span class="toc-section-number">3.2</span> Hypothesis evaluation using
+GORICA</a></li>
+</ul></li>
+<li><a href="#example-3-structural-equation-modeling-sem" id="toc-example-3-structural-equation-modeling-sem"><span class="toc-section-number">4</span> Example 3: Structural equation
+modeling (SEM)</a></li>
+<li><a href="#example-4-multilevel-sem" id="toc-example-4-multilevel-sem"><span class="toc-section-number">5</span> Example 4: Multilevel SEM</a></li>
+<li><a href="#example-5-linear-growth-model-with-a-time-varying-covariate" id="toc-example-5-linear-growth-model-with-a-time-varying-covariate"><span class="toc-section-number">6</span> Example 5: linear growth model with
+a time-varying covariate</a></li>
+<li><a href="#example-6-mediation" id="toc-example-6-mediation"><span class="toc-section-number">7</span> Example 6: Mediation</a></li>
+</ul>
+</div>
+
+<!-- # Tutorial GORICA on SEM -->
+<p>This is a tutorial for applying the AIC-type criterion GORICA, using
+the <code>goric</code> function, to a <code>lavaan</code> object. The
+GORICA is an information criterion that can be used to evaluate
+theory-driven, informative, order-restricted hypotheses. The GORICA
+selects the best hypothesis out of a given set. Below, you will find
+examples for the use of the <code>goric</code> function in the
+<code>restriktor</code> R package when you have a lavaan object.</p>
+<p>More information (tutorials and example R scripts) is available from
+<a href="https://github.com/rebeccakuiper/Tutorials">this github page of
+Rebecca</a>,<br />
+including a tutorial regarding interpreting the GORIC(A) output (called
+‘Guidelines_output_GORIC’).</p>
+<div id="packages" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Packages</h1>
+<p>First, install and call the <code>lavaan</code> library and the
+<code>restriktor</code> library (for the <code>goric</code> function).
+If needed, it is possible to view the description of the function with
+the <code>?</code> operator or the <code>help</code> command.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># To install restriktor in R:</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co">#if (!require(&quot;restriktor&quot;)) install.packages(&quot;restriktor&quot;)</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(restriktor)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co"># print docs in the help-tab to view arguments and explanations for the function</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#?goric</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># To install lavaan in R:</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co"># if (!require(&quot;lavaan&quot;)) install.packages(&quot;lavaan&quot;)</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="fu">library</span>(lavaan)</span></code></pre></div>
+</div>
+<div id="example-1-confirmatory-factor-analysis" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Example 1: Confirmatory
+Factor Analysis</h1>
+<p>In this example, we will look at the <a href="https://www.lavaan.ugent.be/tutorial/cfa.html">Confirmatory Factor
+Analysis (CFA) lavaan example</a>.</p>
+<p>To specify your hypotheses in terms of model parameters, you should
+give your own labels to estimates by including them in the
+<code>lavaan</code> model syntax.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># specify the model, using own labeling</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>HS.model <span class="ot">&lt;-</span> <span class="st">&#39; </span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="st">  visual  =~ lambda_v1*x1 + lambda_v2*x2 + lambda_v3*x3      </span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="st">  textual =~ lambda_t1*x4 + lambda_t2*x5 + lambda_t3*x6</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="st">  speed   =~ lambda_s1*x7 + lambda_s2*x8 + lambda_s3*x9 </span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="st">&#39;</span></span></code></pre></div>
+<p>Next, we need to formulate the hypothesis of interest. Let us say
+that the hypothesis is that all standardized factor loadings are at
+least (in absolute sense) .6. Note that we compare the factor loadings
+to a number, which is often the most meaningful when inspecting
+standardized factor loadings; then, use <code>standardized = TRUE</code>
+in the <code>goric</code> function. As another note, it is also possible
+to compare the size of (absolute values of) various standardized factor
+loadings. Since we are interested in one theory-based hypothesis, we
+compare it to its complement (reflecting all the other possibilities);
+which is done by default in the <code>goric</code> function (i.e., by
+default: <code>comparison = &quot;complement&quot;</code>).</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Hypotheses</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>H1_cfa <span class="ot">&lt;-</span> <span class="st">&#39;</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="st">  abs(lambda_v1) &gt; .6; abs(lambda_v2) &gt; .6; abs(lambda_v3) &gt; .6; </span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="st">  abs(lambda_t1) &gt; .6; abs(lambda_t2) &gt; .6; abs(lambda_t3) &gt; .6; </span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="st">  abs(lambda_s1) &gt; .6; abs(lambda_s2) &gt; .6; abs(lambda_s3) &gt; .6; </span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="st">&#39;</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co"># vs its complement (default)</span></span></code></pre></div>
+<p>Then, we fit the confirmatory factor analysis (CFA) model using the
+<code>cfa</code> function from <code>lavaan</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># fit the model</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co"># fixing the variances of all the latent variables in a CFA model to unity (std.lv = TRUE; https://www.lavaan.ugent.be/tutorial/syntax2.html)</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>fit_cfa <span class="ot">&lt;-</span> <span class="fu">cfa</span>(HS.model, <span class="at">data =</span> HolzingerSwineford1939,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>           <span class="at">std.lv =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Now, we can call the <code>goric</code> function. Because of entering
+a lavaan object, we use GORICA (i.e.,<code>type = &quot;gorica&quot;</code>) by
+default.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Calculate GORICA values and weights for H1_cfa and its complement.</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>) <span class="co"># Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>results_cfa <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_cfa, </span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>                  <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1_cfa =</span> H1_cfa),</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>                  <span class="at">standardized =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#summary(results_cfa)</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>results_cfa</span></code></pre></div>
+<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+## 
+## Results:
+##         model  loglik  penalty   gorica  loglik.weights  penalty.weights  gorica.weights
+## 1      H1_cfa  16.167    4.478  -23.378           0.011            0.989           0.497
+## 2  complement  20.685    8.984  -23.402           0.989            0.011           0.503
+## 
+## Conclusion:
+## The order-restricted hypothesis &#39;H1_cfa&#39; has less support (namely,  0.497 / 0.503 &lt; 1 times more support) than its complement. That is, the complement has 1.01 times more support than &#39;H1_cfa&#39;</code></pre>
+<p>Conclusion: The order-restricted hypothesis ‘H1_cfa’ has <span class="math inline">\(&lt; 1\)</span> times more, so, less, support than
+its complement. Thus, we did not find support for our hypothesis, that
+is, there is at least one standardized factor loading less than 0.6 (in
+absolute sense).</p>
+</div>
+<div id="example-2-multiple-group-cfa" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Example 2: Multiple
+Group CFA</h1>
+<p>In this example, we will extend the <a href="https://www.lavaan.ugent.be/tutorial/groups.html">CFA with a
+multi-group structure</a>. There are two groups: 1. Pasteur and 2.
+Grant-White. Each will have there own parameter estimates and thus also
+need there own labeling. In this example, we will evaluate hypothesis
+regarding the latent means of the two schools. Before we do, we need to
+establish measurement invariance, such that we can fairly compare the
+means.</p>
+<div id="measurement-invariance" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Measurement
+invariance</h2>
+<p>We could use the GORICA to check for measurement invariance. When you
+can specify ranges of values for which the parameters, say, loadings,
+are the same for each group, then there is an added value of using the
+GORICA. Here, we will inspect the case where we set the the parameters,
+say, loadings, to be equal across groups. Then, one can use the AIC as
+well, where we will also determine the AIC weights for a more in-depth
+comparison.<br />
+Note that we compare parameters across groups, so they are already on a
+comparable scale, since they denote the same relationship in each group.
+Therefore, we do not need the standardized values.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># specify the model</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>HS.model_mgcfa <span class="ot">&lt;-</span> <span class="st">&#39; </span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="st">  visual  =~ x1 + x2 + x3</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="st">  textual =~ x4 + x5 + x6</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9 </span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="st">&#39;</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># configural invariance</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>fit_ci <span class="ot">&lt;-</span> <span class="fu">cfa</span>(HS.model_mgcfa, </span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>              <span class="at">data =</span> HolzingerSwineford1939, </span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>              <span class="at">group =</span> <span class="st">&quot;school&quot;</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co"># weak invariance</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>fit_wi <span class="ot">&lt;-</span> <span class="fu">cfa</span>(HS.model_mgcfa, </span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>              <span class="at">data =</span> HolzingerSwineford1939, </span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>              <span class="at">group =</span> <span class="st">&quot;school&quot;</span>,</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>              <span class="at">group.equal =</span> <span class="st">&quot;loadings&quot;</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co"># strong invariance</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>fit_si <span class="ot">&lt;-</span> <span class="fu">cfa</span>(HS.model_mgcfa, </span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>              <span class="at">data =</span> HolzingerSwineford1939, </span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>              <span class="at">group =</span> <span class="st">&quot;school&quot;</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>              <span class="at">group.equal =</span> <span class="fu">c</span>(<span class="st">&quot;intercepts&quot;</span>, <span class="st">&quot;loadings&quot;</span>))</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co"># strict invariance</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>fit_strict <span class="ot">&lt;-</span> <span class="fu">cfa</span>(HS.model_mgcfa, </span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>                  <span class="at">data =</span> HolzingerSwineford1939, </span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>                  <span class="at">group =</span> <span class="st">&quot;school&quot;</span>,</span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>                  <span class="at">group.equal =</span> <span class="fu">c</span>(<span class="st">&quot;intercepts&quot;</span>, <span class="st">&quot;loadings&quot;</span>, <span class="st">&quot;residuals&quot;</span>))</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co"># model comparison with AIC</span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>AIC_meas.invar <span class="ot">&lt;-</span> <span class="fu">lavTestLRT</span>(fit_ci, fit_wi, fit_si, fit_strict)<span class="sc">$</span>AIC</span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>hypo.names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;configural&quot;</span>, <span class="st">&quot;weak&quot;</span>, <span class="st">&quot;strong&quot;</span>, <span class="st">&quot;strict&quot;</span>)</span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>AIC_weights <span class="ot">&lt;-</span> <span class="fu">calc_ICweights</span>(AIC_meas.invar, hypo.names)</span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="co">#print(AIC_weights, use_scientific = FALSE, digits = 3)</span></span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a>AIC_weights<span class="sc">$</span>ratio_IC_weights</span></code></pre></div>
+<pre><code>##            vs_configural      vs_weak    vs_strong    vs_strict
+## configural  1.000000e+00 1.489865e-01 1.845625e+05 1.373106e+05
+## weak        6.712019e+00 1.000000e+00 1.238787e+06 9.216313e+05
+## strong      5.418218e-06 8.072412e-07 1.000000e+00 7.439787e-01
+## strict      7.282760e-06 1.085033e-06 1.344124e+00 1.000000e+00</code></pre>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>AIC_weights<span class="sc">$</span>ratio_IC_weights[<span class="st">&quot;weak&quot;</span>,]</span></code></pre></div>
+<pre><code>## vs_configural       vs_weak     vs_strong     vs_strict 
+##  6.712019e+00  1.000000e+00  1.238787e+06  9.216313e+05</code></pre>
+<p>The weak invariance (equal factor loadings) is the best of the set,
+since it has the lowest value. From the AIC weights, we can see that it
+is about 20 times more supported than configural invariance, and many
+times more supported than strong and strict invariance. Therefore, it is
+unwise to directly compare the values of the latent means across the two
+groups.</p>
+<p>To still show how one can do that using the GORICA, we do proceed
+here.</p>
+</div>
+<div id="hypothesis-evaluation-using-gorica" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Hypothesis evaluation
+using GORICA</h2>
+<p>From here on, we assume that strong (or even strict) measurement
+invariance was established, such that we can fairly compare the latent
+means. Let us say that our expectation is the latent means of our three
+factors are in absolute sense higher in the Pasteur group than in the
+Grant-White group.<br />
+First, we will create the model such that we obtain these latent means.
+Second, we specify our hypothesis. Third, we run the model. Fourth, we
+evaluate our hypothesis using the GORICA.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># specify the model, using own labeling (per group!)</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co"># Specify model, such that we obtain the latent means (and not differences w.r.t. a reference category).</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>HS.model_mgcfa <span class="ot">&lt;-</span> <span class="st">&#39;</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="st">              visual  =~ x1 + x2 + x3</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="st">              textual =~ x4 + x5 + x6</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="st">              speed   =~ x7 + x8 + x9</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="st"># latent variable intercepts; here: </span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="st"># the latent means</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="st">   visual  ~ c(mean_v_P, mean_v_GW) * 1</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="st">   textual ~ c(mean_t_P, mean_t_GW) * 1</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="st">   speed   ~ c(mean_s_P, mean_s_GW) * 1</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="st">&#39;</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co"># where below we ensure:</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co"># intercepts equal across groups $</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co"># loadings equal across groups: </span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co"># group.equal = c(&quot;intercepts&quot;, &quot;loadings&quot;)</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co"># and</span></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co"># first intercept equal to 0:</span></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co"># marker.int.zero = TRUE</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a></span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="co"># Hypotheses</span></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>H1_mgcfa <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a><span class="st">abs(mean_v_P) &gt; abs(mean_v_GW); </span></span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a><span class="st">abs(mean_t_P) &gt; abs(mean_t_GW); </span></span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a><span class="st">abs(mean_s_P) &gt; abs(mean_s_GW)</span></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a><span class="co"># vs its complement (default)</span></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a><span class="co"># fit the model</span></span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a>fit_mgcfa <span class="ot">&lt;-</span> <span class="fu">cfa</span>(HS.model_mgcfa, </span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a>                 <span class="at">data =</span> HolzingerSwineford1939, </span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a>                 <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, </span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a>                 <span class="at">group.equal =</span> <span class="fu">c</span>(<span class="st">&quot;intercepts&quot;</span>, <span class="st">&quot;loadings&quot;</span>), </span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a>                 <span class="at">marker.int.zero =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a></span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a><span class="co"># Calculate GORICA values and weights</span></span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>) <span class="co"># Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a>results_mgcfa <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_mgcfa, </span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a>                       <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1_mgcfa =</span> H1_mgcfa))</span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a>results_mgcfa</span></code></pre></div>
+<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+## 
+## Results:
+##         model  loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights
+## 1    H1_mgcfa  -2.500    4.774  14.549           0.000            0.649           0.000
+## 2  complement   9.594    5.390  -8.408           1.000            0.351           1.000
+## 
+## Conclusion:
+## The order-restricted hypothesis &#39;H1_mgcfa&#39; has less support (namely,  0.000 / 1.000 &lt; 1 times more support) than its complement. That is, the complement has Inf times more support than &#39;H1_mgcfa&#39;</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># # Alternative:</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co"># # In the case you want to extract the estimates and their covariance matrix yourself and use that as input for the goric function:</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># #</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co"># # Extract estimates and their covariance matrix</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co"># names_param &lt;- c(&quot;mean_v_P&quot;, &quot;mean_v_GW&quot;, &quot;mean_t_P&quot;, &quot;mean_t_GW&quot;, &quot;mean_s_P&quot;, &quot;mean_s_GW&quot;)</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># est &lt;- coef(fit_mgcfa)[names_param]</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co"># VCOV &lt;- vcov(fit_mgcfa)[names_param, names_param]</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co"># #</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co"># # Calculate GORICA values and weights</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co"># set.seed(100) # Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co"># results_mgcfa &lt;- goric(est, VCOV = VCOV,</span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#                        hypotheses = list(H1_mgcfa = H1_mgcfa)) </span></span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co"># # GORICA values and weights</span></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="co"># #summary(results_mgcfa)</span></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="co"># results_mgcfa</span></span></code></pre></div>
+<p>Conclusion: The order-restricted hypothesis ‘H1_mgcfa’ has less
+support (namely, <span class="math inline">\(&lt; 1\)</span> times more
+support) than its complement. That is, there is support for the latent
+means being in absolute sense higher in the Pasteur group than in the
+Grant-White group.</p>
+</div>
+</div>
+<div id="example-3-structural-equation-modeling-sem" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Example 3: Structural
+equation modeling (SEM)</h1>
+<p>In this example, we will look at the <a href="https://www.lavaan.ugent.be/tutorial/sem.html">structural equation
+modeling (SEM) lavaan example</a>.</p>
+<p>Here, we assume that we are interested in (some of) the regression
+parameters; so, we only need to label these. We want to compare the
+strengths of the predictive relationships; hence, we need standardized
+estimates for a meaningful comparison; that is, add
+<code>standardized = TRUE</code> in the <code>goric</code> function. One
+can compare strengths of relationships of various independent variables
+for a specific dependent variable, but one over different dependent
+variables.<br />
+Here, we compare the strengths of relationships for one dependent
+variable, namely dem65. More specially, we expect that the predictive
+relationship of dem60 for dem65 (beta_dem65_dem60) is (in absolute
+sense) stronger than that of ind60 for dem65 (beta_dem65_ind60).</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># specify the model, using own labeling</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>model_sem <span class="ot">&lt;-</span> <span class="st">&#39;</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="st">  # measurement model</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="st">    ind60 =~ x1 + x2 + x3</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="st">    dem60 =~ y1 + y2 + y3 + y4</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="st">    dem65 =~ y5 + y6 + y7 + y8</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="st">  # regressions</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="st">    dem60 ~ ind60</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="st">    dem65 ~ beta_dem65_ind60*ind60 + beta_dem65_dem60*dem60</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="st">  # residual correlations</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="st">    y1 ~~ y5</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="st">    y2 ~~ y4 + y6</span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="st">    y3 ~~ y7</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="st">    y4 ~~ y8</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="st">    y6 ~~ y8</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="st">&#39;</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co"># Hypotheses</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a>H1_sem <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="st">abs(beta_dem65_dem60) &gt; abs(beta_dem65_ind60) </span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co"># vs its complement (default)</span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co"># fit the model</span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a>fit_sem <span class="ot">&lt;-</span> <span class="fu">sem</span>(model_sem, <span class="at">data =</span> PoliticalDemocracy)</span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co"># Calculate GORICA values and weights</span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>) <span class="co"># Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a>results_sem <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_sem,</span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a>                     <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1_sem =</span> H1_sem),</span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a>                     <span class="at">standardized =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a></span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a><span class="co">#summary(results_sem)</span></span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a>results_sem</span></code></pre></div>
+<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+## 
+## Results:
+##         model   loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights
+## 1      H1_sem    4.348    1.500  -5.697           1.000            0.500           1.000
+## 2  complement  -14.069    1.500  31.137           0.000            0.500           0.000
+## 
+## Conclusion:
+## The order-restricted hypothesis &#39;H1_sem&#39; has 99620500.72 times more support than its complement.</code></pre>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Unrestricted &amp; Order-restricted parameter estimates of interest</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="co"># Note: Hypotheses should be specified before seeing the data.</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="co"># Looking afterwards at the standardized estimates can give you more insight.</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co"># Unrestricted parameter estimates of interest</span></span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="fu">subset</span>(<span class="fu">standardizedSolution</span>(fit_sem), op <span class="sc">==</span> <span class="st">&quot;~&quot;</span> <span class="sc">&amp;</span> lhs <span class="sc">==</span> <span class="st">&quot;dem65&quot;</span>)</span></code></pre></div>
+<pre><code>##      lhs op   rhs            label est.std    se      z pvalue ci.lower ci.upper
+## 13 dem65  ~ ind60 beta_dem65_ind60   0.182 0.070  2.587   0.01    0.044    0.320
+## 14 dem65  ~ dem60 beta_dem65_dem60   0.885 0.051 17.405   0.00    0.786    0.985</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="co"># Order-restricted parameter estimates of interest;</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="co"># that is, the estimates of interest under the restrictions in the hypotheses:</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>results_sem<span class="sc">$</span>ormle</span></code></pre></div>
+<pre><code>## $b.restr
+##            beta_dem65_ind60 beta_dem65_dem60
+## H1_sem            0.1822593        0.8852290
+## complement        0.5959879        0.5959879</code></pre>
+<p>Conclusion: The order-restricted hypothesis ‘H1_sem’ has (<span class="math inline">\(&gt; 1\)</span> times) more support than its
+complement. Thus, we found support that the predictive relationship of
+ind60 for dem60 is (in absolute sense) higher that that for dem65.</p>
+</div>
+<div id="example-4-multilevel-sem" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Example 4: Multilevel
+SEM</h1>
+<p>In this example, we will look at the <a href="https://www.lavaan.ugent.be/tutorial/multilevel.html">multilevel/two-level
+SEM lavaan example</a>.</p>
+<p>Here, we assume that we are interested in (some of) the regression
+parameters; so, we only need to label these. We want to compare the
+strengths of the predictive relationships. Hence, we need standardized
+estimates for a meaningful comparison; that is, add
+<code>standardized = TRUE</code> in the <code>goric</code> function. We
+expect that the order of the (absolute) strength/size in predictive
+relationships for fw (beta) is highest for x1, then x2, and then x3,
+that is, abs(beta_x1) &gt; abs(beta_x2) &gt; abs(beta_x3).</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="co"># specify the model, using own labeling</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>model_msem <span class="ot">&lt;-</span> <span class="st">&#39;</span></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="st">    level: 1</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="st">        fw =~ y1 + y2 + y3</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="st">        fw ~ beta_x1*x1 + beta_x2*x2 + beta_x3*x3</span></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="st">    level: 2</span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="st">        fb =~ y1 + y2 + y3</span></span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="st">        fb ~ w1 + w2</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="st">&#39;</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co"># Hypotheses</span></span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a>H1_msem <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="st">abs(beta_x1) &gt; abs(beta_x2) &gt; abs(beta_x3) </span></span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a><span class="co"># vs its complement (default)</span></span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a></span>
+<span id="cb20-17"><a href="#cb20-17" tabindex="-1"></a><span class="co"># fit the model</span></span>
+<span id="cb20-18"><a href="#cb20-18" tabindex="-1"></a>fit_msem <span class="ot">&lt;-</span> <span class="fu">sem</span>(<span class="at">model =</span> model_msem, <span class="at">data =</span> Demo.twolevel, <span class="at">cluster =</span> <span class="st">&quot;cluster&quot;</span>)</span>
+<span id="cb20-19"><a href="#cb20-19" tabindex="-1"></a></span>
+<span id="cb20-20"><a href="#cb20-20" tabindex="-1"></a><span class="co"># Calculate GORICA values and weights</span></span>
+<span id="cb20-21"><a href="#cb20-21" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>) <span class="co"># Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb20-22"><a href="#cb20-22" tabindex="-1"></a>results_msem <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_msem, </span>
+<span id="cb20-23"><a href="#cb20-23" tabindex="-1"></a>                  <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1_msem =</span> H1_msem),</span>
+<span id="cb20-24"><a href="#cb20-24" tabindex="-1"></a>                  <span class="at">standardized =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb20-25"><a href="#cb20-25" tabindex="-1"></a></span>
+<span id="cb20-26"><a href="#cb20-26" tabindex="-1"></a><span class="co">#summary(results_msem)</span></span>
+<span id="cb20-27"><a href="#cb20-27" tabindex="-1"></a>results_msem</span></code></pre></div>
+<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+## 
+## Results:
+##         model  loglik  penalty   gorica  loglik.weights  penalty.weights  gorica.weights
+## 1     H1_msem   9.146    1.827  -14.637           0.995            0.700           0.998
+## 2  complement   3.848    2.673   -2.350           0.005            0.300           0.002
+## 
+## Conclusion:
+## The order-restricted hypothesis &#39;H1_msem&#39; has 465.55 times more support than its complement.</code></pre>
+<p>Conclusion: The order-restricted hypothesis ‘H1_msem’ has (<span class="math inline">\(&gt; 1\)</span> times) more support than its
+complement. Thus, we found support that the order of the (absolute)
+strength in predictive relationships for fw (beta) is highest for x1,
+then x2, and then x3, that is, abs(beta_x1) &gt; abs(beta_x2) &gt;
+abs(beta_x3).</p>
+</div>
+<div id="example-5-linear-growth-model-with-a-time-varying-covariate" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Example 5: linear
+growth model with a time-varying covariate</h1>
+<p>In this example, we will look at the <a href="https://www.lavaan.ugent.be/tutorial/growth.html">linear growth
+model with a time-varying covariate lavaan example</a>.</p>
+<p>Here, we assume that we are interested in the predictive strength of
+the two predictors (x1 and x2) on the slope (s); so, we only need to
+label these. We expect that the strength of x2 on the slope (s_2) is (in
+absolute sense) higher than that of x1 (s_1).</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co"># specify the model, using own labeling</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="co"># a linear growth model with a time-varying covariate</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>model_growth <span class="ot">&lt;-</span> <span class="st">&#39;</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="st">  # intercept and slope with fixed coefficients</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="st">    i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4</span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="st">    s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4</span></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="st">  # regressions</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="st">    i ~ x1 + x2</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="st">    s ~ s_1*x1 + s_2*x2</span></span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="st">  # time-varying covariates</span></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="st">    t1 ~ c1</span></span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a><span class="st">    t2 ~ c2</span></span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="st">    t3 ~ c3</span></span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a><span class="st">    t4 ~ c4</span></span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="st">  ## Extra: Label intercepts</span></span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="st">  #i ~ intercept_i * 1</span></span>
+<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a><span class="st">  #s ~ intercept_s * 1</span></span>
+<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a><span class="st">&#39;</span></span>
+<span id="cb22-19"><a href="#cb22-19" tabindex="-1"></a></span>
+<span id="cb22-20"><a href="#cb22-20" tabindex="-1"></a><span class="co"># Hypotheses</span></span>
+<span id="cb22-21"><a href="#cb22-21" tabindex="-1"></a>H1_growth <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb22-22"><a href="#cb22-22" tabindex="-1"></a><span class="st">abs(s_2) &gt; abs(s_1) </span></span>
+<span id="cb22-23"><a href="#cb22-23" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb22-24"><a href="#cb22-24" tabindex="-1"></a><span class="co"># vs its complement (default)</span></span>
+<span id="cb22-25"><a href="#cb22-25" tabindex="-1"></a></span>
+<span id="cb22-26"><a href="#cb22-26" tabindex="-1"></a><span class="co"># fit the model</span></span>
+<span id="cb22-27"><a href="#cb22-27" tabindex="-1"></a>fit_growth <span class="ot">&lt;-</span> <span class="fu">growth</span>(model_growth, <span class="at">data =</span> Demo.growth)</span>
+<span id="cb22-28"><a href="#cb22-28" tabindex="-1"></a></span>
+<span id="cb22-29"><a href="#cb22-29" tabindex="-1"></a><span class="co"># Calculate GORICA values and weights</span></span>
+<span id="cb22-30"><a href="#cb22-30" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>) <span class="co"># Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb22-31"><a href="#cb22-31" tabindex="-1"></a>results_growth <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_growth,</span>
+<span id="cb22-32"><a href="#cb22-32" tabindex="-1"></a>                        <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1_growth =</span> H1_growth),</span>
+<span id="cb22-33"><a href="#cb22-33" tabindex="-1"></a>                        <span class="at">standardized =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb22-34"><a href="#cb22-34" tabindex="-1"></a></span>
+<span id="cb22-35"><a href="#cb22-35" tabindex="-1"></a><span class="co">#summary(results_growth)</span></span>
+<span id="cb22-36"><a href="#cb22-36" tabindex="-1"></a>results_growth</span></code></pre></div>
+<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+## 
+## Results:
+##         model  loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights
+## 1   H1_growth   5.210    1.500  -7.419           1.000            0.500           1.000
+## 2  complement  -8.912    1.500  20.824           0.000            0.500           0.000
+## 
+## Conclusion:
+## The order-restricted hypothesis &#39;H1_growth&#39; has 1358030.54 times more support than its complement.</code></pre>
+<p>Conclusion: The order-restricted hypothesis ‘H1_growth’ has many more
+(<span class="math inline">\(&gt;&gt;  1\)</span> times more) support
+than its complement. Thus, we found support that the intercept of the
+slope s is (in absolute sense) higher than the intercept of the
+intercept i.</p>
+</div>
+<div id="example-6-mediation" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Example 6:
+Mediation</h1>
+<p>In this example, we will look at the <a href="https://www.lavaan.ugent.be/tutorial/mediation.html">mediation
+lavaan example</a>.</p>
+<p>Let us say we want to evaluate whether there is partial mediation or
+full mediation. It can be helpful to specify what you believe is the
+minimum effect. Here, we assume that an (in)direct effect between -0.1
+and 0.1 can be seen as no effect. More examples can found on <a href="https://github.com/rebeccakuiper/Tutorials/tree/main/GORICA%20for%20mediation">this
+github page of Rebecca</a>.</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Create data</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>M <span class="ot">&lt;-</span> <span class="fl">0.5</span><span class="sc">*</span>X <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)</span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fl">0.7</span><span class="sc">*</span>M <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)</span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a>Data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">X =</span> X, <span class="at">Y =</span> Y, <span class="at">M =</span> M)</span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co"># specify the model, using own labeling</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a>model_med <span class="ot">&lt;-</span> <span class="st">&#39; </span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="st">           # direct effect</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="st">             Y ~ c*X</span></span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a><span class="st">           # mediator</span></span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="st">             M ~ a*X</span></span>
+<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a><span class="st">             Y ~ b*M</span></span>
+<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a><span class="st">           # indirect effect (a*b)</span></span>
+<span id="cb24-16"><a href="#cb24-16" tabindex="-1"></a><span class="st">             indirect := a*b</span></span>
+<span id="cb24-17"><a href="#cb24-17" tabindex="-1"></a><span class="st">           # direct effect (c) # Optional</span></span>
+<span id="cb24-18"><a href="#cb24-18" tabindex="-1"></a><span class="st">             direct := c       # Could leave this out and use c</span></span>
+<span id="cb24-19"><a href="#cb24-19" tabindex="-1"></a><span class="st">         &#39;</span></span>
+<span id="cb24-20"><a href="#cb24-20" tabindex="-1"></a></span>
+<span id="cb24-21"><a href="#cb24-21" tabindex="-1"></a><span class="co"># Hypotheses</span></span>
+<span id="cb24-22"><a href="#cb24-22" tabindex="-1"></a>H_part <span class="ot">&lt;-</span> <span class="st">&quot;abs(indirect) &gt; 0.1; abs(direct) &gt; 0.1&quot;</span></span>
+<span id="cb24-23"><a href="#cb24-23" tabindex="-1"></a>H_full <span class="ot">&lt;-</span> <span class="st">&quot;abs(indirect) &gt; 0.1; -0.1 &lt; direct &lt; 0.1&quot;</span></span>
+<span id="cb24-24"><a href="#cb24-24" tabindex="-1"></a><span class="co"># and unconstrained as failsafe (default)</span></span>
+<span id="cb24-25"><a href="#cb24-25" tabindex="-1"></a></span>
+<span id="cb24-26"><a href="#cb24-26" tabindex="-1"></a><span class="co"># fit the model</span></span>
+<span id="cb24-27"><a href="#cb24-27" tabindex="-1"></a>fit_med <span class="ot">&lt;-</span> <span class="fu">sem</span>(model_med, <span class="at">data =</span> Data)</span>
+<span id="cb24-28"><a href="#cb24-28" tabindex="-1"></a><span class="co">#summary(fit_med, standardized = TRUE)</span></span>
+<span id="cb24-29"><a href="#cb24-29" tabindex="-1"></a></span>
+<span id="cb24-30"><a href="#cb24-30" tabindex="-1"></a><span class="co"># Calculate GORICA values and weights:</span></span>
+<span id="cb24-31"><a href="#cb24-31" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb24-32"><a href="#cb24-32" tabindex="-1"></a><span class="co"># 1. based on the object</span></span>
+<span id="cb24-33"><a href="#cb24-33" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>) <span class="co"># Needed for reproducibility &amp; sensitivity check</span></span>
+<span id="cb24-34"><a href="#cb24-34" tabindex="-1"></a>results_med <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_med,</span>
+<span id="cb24-35"><a href="#cb24-35" tabindex="-1"></a>                     <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H_part =</span> H_part, <span class="at">H_full =</span> H_full),</span>
+<span id="cb24-36"><a href="#cb24-36" tabindex="-1"></a>                     <span class="at">standardized =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div style="font-size: 0.85em;">
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co">#summary(results_med)</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>results_med</span></code></pre></div>
+<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+## 
+## Results:
+##            model  loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights  gorica.weights_without_unc
+## 1         H_part   3.098    0.922  -4.351           0.249            0.349           0.262                       0.303
+## 2         H_full   3.511    0.500  -6.022           0.376            0.532           0.604                       0.697
+## 3  unconstrained   3.511    2.000  -3.022           0.376            0.119           0.135                            
+## 
+## Conclusion:
+## - The order-restricted hypothesis &#39;H_full&#39; is the best in the set, as it has the highest GORIC(A) weight.
+## - Since &#39;H_full&#39; has a higher GORIC(A) weight than the unconstrained hypothesis, it is not considered weak. We can now inspect the relative support for &#39;H_full&#39; against the other order-restricted hypotheses:
+##   * &#39;H_full&#39; is 2.306 times more supported than &#39;H_part&#39;.</code></pre>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="co"># # Alternative:</span></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="co"># # 2. based on extracted estimates</span></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="co"># # Extract standardized estimates of the defined parameters and their covariance matrix</span></span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="co"># label_names &lt;- c(&quot;direct&quot;, &quot;indirect&quot;)</span></span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="co"># est &lt;- as.vector(standardizedSolution(fit_med)[&#39;est.std&#39;])$est.std</span></span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="co"># names(est) &lt;- standardizedSolution(fit_med)$label</span></span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a><span class="co"># est &lt;- est[label_names]</span></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a><span class="co"># #est</span></span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a><span class="co"># VCOV &lt;- lavInspect(fit_med, &quot;vcov.def.std.all&quot;)[label_names, label_names] </span></span>
+<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a><span class="co"># # VCOV # covariance matrix of parameter estimates</span></span>
+<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a><span class="co"># #</span></span>
+<span id="cb27-13"><a href="#cb27-13" tabindex="-1"></a><span class="co"># # GORICA</span></span>
+<span id="cb27-14"><a href="#cb27-14" tabindex="-1"></a><span class="co"># set.seed(123) # for reproducibility &amp; possibly sensitivity check</span></span>
+<span id="cb27-15"><a href="#cb27-15" tabindex="-1"></a><span class="co"># results_med &lt;- goric(est, VCOV = VCOV,</span></span>
+<span id="cb27-16"><a href="#cb27-16" tabindex="-1"></a><span class="co">#                    hypotheses = list(H_part = H_part, H_full = H_full))</span></span>
+<span id="cb27-17"><a href="#cb27-17" tabindex="-1"></a><span class="co"># #summary(results_med)</span></span>
+<span id="cb27-18"><a href="#cb27-18" tabindex="-1"></a><span class="co"># results_med</span></span></code></pre></div>
+</div>
+<!-- Conclusion: -->
+<!-- - The order-restricted hypothesis ‘H_full’ is the best in the set, as it has the highest GORIC(A) weight. -->
+<!-- - Since ‘H_full’ has a higher GORIC(A) weight than the unconstrained hypothesis, it is not considered weak. -->
+<!-- We can now inspect the relative support for ‘H_full’ against the other order-restricted hypotheses: -->
+<!--   * ‘H_full’ has ($>  1$ times) more support than ‘H_part’.   -->
+<!-- Thus, we found support for full mediation. -->
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;">
+
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

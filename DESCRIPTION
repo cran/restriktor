@@ -1,7 +1,7 @@
 Package: restriktor
 Title: Restricted Statistical Estimation and Inference for Linear
         Models
-Version: 0.6-10
+Version: 0.6-30
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "info@restriktor.org"),
@@ -24,14 +24,13 @@ License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
-Packaged: 2024-12-19 14:54:59 UTC; l.vanbrabant
+Packaged: 2026-02-05 13:42:36 UTC; l.vanbrabant
 Author: Leonard Vanbrabant [aut, cre],
   Rebecca Kuiper [aut],
   Yves Rosseel [ctb],
   Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
-Suggests: knitr, rmarkdown, bain, testthat (>= 3.0.0)
+Suggests: knitr, rmarkdown, bain, testthat (>= 3.0.0), metadat
 VignetteBuilder: knitr
-Config/testthat/edition: 3
 Repository: CRAN
-Date/Publication: 2024-12-19 15:20:02 UTC
+Date/Publication: 2026-02-05 14:40:02 UTC

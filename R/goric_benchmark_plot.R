@@ -5,7 +5,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
-    stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
+    stop("\nrestriktor ERROR: Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
   
   # Check if the output_type is valid
@@ -160,7 +160,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   if (!is.null(df_subset$Group_hypo_comparison)) {
     title <- paste(title, "vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
   }
-
+  
   # Calculate densities for each group
   # density_data <- df_subset %>%
   #   group_by(Group_pop_values) %>%
@@ -241,7 +241,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
     geom_segment(data = percentile_df[nrow(percentile_df):1, ], aes(x = percentile_value, xend = percentile_value,
                                            y = 0, yend = Inf, linetype = percentile_label, 
                                            color = percentile_label),
-                                           size = 1) +
+                                            linewidth = 1) +
     ggtitle(title) +
     xlab(xlabel) + 
     ylab("Density") + 
@@ -289,7 +289,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   if (!is.null(x_lim) && length(x_lim) == 2) {
     if (log_scale & !x_lim[1] > 0) {
       x_lim[1] <- .001
-      message(paste("Warning: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
+      warning(paste("\nrestriktor WARNING: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
               "Adjusting x_lim[1] to 0.001. You can manually specify a value greater than 0 for x_lim[1] if needed."))
     }
     p <- p + coord_cartesian(xlim = x_lim)
@@ -319,6 +319,15 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
 plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
                             alpha = 0.5, distr_grid = FALSE, 
                             percentiles = NULL, log_scale = FALSE) {
+  # TO DO this goes wrong when multiple hypotheses and plot(goric.object, output_type = "gw")
+  # then: groups gives for example [1] "H1_sesam "
+  # daardoor title in regel 161 niet goed.
+  # Het lijkt alleen niet door de code te gaan waar groups aangemaakt wordt... maar dat ligt vast aan mij :-)
+  #
+  # TO DO
+  #headers en notes plots soms niet mooi (iig als "gw") en, 
+  #als meer dan 1 hypo en als Heq=T, de titels/headers ook verkeerd (zegt dan bijv H1 vs H1).
+  #
   plot_list <- list()
   for (group in groups) {
     plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 
