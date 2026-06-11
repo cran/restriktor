@@ -1,10 +1,24 @@
 print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
-  cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
-              packageDescription("restriktor", fields = "Version"), x$type_ev))
+  # Determine label: default to "GORICA" unless type is explicitly given
+  # Use [[ ]] to avoid partial matching (e.g., $type matching $type_ev)
+  if (!is.null(x[["type"]])) {
+    type_label <- switch(
+      x$type,
+      goric   = "GORIC",
+      goricc  = "GORICC",
+      gorica  = "GORICA",
+      goricac = "GORICAC"
+    )
+  } else {
+    type_label <- "GORICA"
+  }
   
-  if (!is.null(x$messageAdded)) {
-    cat(x$messageAdded)
+  cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
+              packageDescription("restriktor", fields = "Version"), x[["type_ev"]]))
+  
+  if (!is.null(x[["messageAdded"]])) {
+    cat(x[["messageAdded"]])
     # TO DO
   }
   
@@ -25,40 +39,27 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat(paste("\nInput type 'icvalues' detected: "))
     cat("Information criteria values\n")
   } else if (inherits(x, "evSyn_ICweights")) {
-    cat(paste("\nInput type 'icvalues' detected: "))
-    cat("Information criteria icweights (summing to 1)\n")
+    cat(paste("\nInput type 'icweights' detected: "))
+    cat("Information criteria weights (summing to 1)\n")
   } else if (inherits(x, "evSyn_ICratios")) {
     cat(paste("\nInput type 'icratios' detected: "))
     cat("Ratio of information criteria weights (each vector ends with 1)\n")
   } 
   
-  if (!is.null(x$Cumulative_GORICA_weights)) {
-    if (x$type == "gorica") {
-      cat("\nFinal GORICA weights:\n")
-    } else if (x$type == "goricac") {
-      cat("\nFinal GORICAC weights:\n") 
-    }
-    cgw <- sapply(x$Cumulative_GORICA_weights["Final", , drop = FALSE], 
+  if (!is.null(x[["Cumulative_GORICA_weights"]])) {
+    cat(paste0("\nFinal ", type_label, " weights:\n"))
+    cgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
-    names(cgw) <- colnames(x$Cumulative_GORICA_weights)
+    names(cgw) <- colnames(x[["Cumulative_GORICA_weights"]])
     print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
     cat("---\n")
   }
   
-  # TO DO
-  # In 'Final results:' geen rijnamen... 
-  # Die namen zijn ook handig als headers in per study results en cum results/
-  # In argumenten van output object niet zoiets als 'Final results', wel 'Final_ratio_GORICA_weights'  
-  
-  if (x$type == "gorica") {
-    cat("\nRatio final GORICA weights:\n")  
-  } else if (x$type == "goricac") {
-    cat("\nRatio final GORICAC weights:\n")  
-  }
-  formatted_weights <- apply(x$Final_ratio_GORICA_weights, c(1, 2), 
+  cat(paste0("\nRatio final ", type_label, " weights:\n"))
+  formatted_weights <- apply(x[["Final_ratio_GORICA_weights"]], c(1, 2), 
                              function(val) format_numeric(val, digits = digits))
   print(formatted_weights, print.gap = 2, quote = FALSE, right = TRUE)
   cat("\n")
   
-  message(x$messages$mix_weights)
+  message(x[["messages"]]$mix_weights)
 }

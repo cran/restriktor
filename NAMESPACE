@@ -78,7 +78,8 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, geom_hline,them
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
            scale_fill_brewer, scale_color_manual, coord_cartesian,
            scale_linetype_manual, geom_vline, geom_ribbon, scale_x_continuous,
-           facet_grid, scale_x_log10, stat_density, after_stat, scale_fill_manual)
+           facet_grid, scale_x_log10, stat_density, after_stat, scale_fill_manual,
+           ggplot_build, scale_colour_manual)
 
 importFrom("scales", brewer_pal)
 
@@ -113,6 +114,7 @@ export(coef.restriktor, model.matrix.restriktor)
 export(con_weights_boot)
 export(coef.con_goric)
 export(evSyn, plot.evSyn)
+export(leave1studyout)
 export(calculate_IC_weights, calc_ICweights)
 export(print.goric_ICw)
 export(benchmark)
@@ -163,7 +165,10 @@ S3method(goric, rma)
 S3method(goric, nlmerMod)
 S3method(goric, glmerMod)
 S3method(goric, lmerMod)
+S3method(goric, effectlite)
 
+S3method(leave1studyout, default)
+S3method(leave1studyout, evSyn)
 S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)

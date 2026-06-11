@@ -13,7 +13,7 @@
 <meta name="author" content="Rebecca M. Kuiper" />
 <meta name="author" content="Leonard Vanbrabant" />
 
-<meta name="date" content="2026-02-05" />
+<meta name="date" content="2026-06-11" />
 
 <title>Guidelines for Interpreting GORIC(A) Output</title>
 
@@ -51,8 +51,9 @@ overflow: visible;
 }
 </style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -63,7 +64,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -343,7 +344,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 Output</h1>
 <h4 class="author">Rebecca M. Kuiper</h4>
 <h4 class="author">Leonard Vanbrabant</h4>
-<h4 class="date">2026-02-05</h4>
+<h4 class="date">2026-06-11</h4>
 
 
 <div id="TOC">
@@ -522,7 +523,7 @@ the set.</p>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>results_1c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>results_1c</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -587,7 +588,7 @@ there is</em> (in case of a small sample size).</p></li>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>results_1u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1))</span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>results_1u</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -714,7 +715,7 @@ Section.</p></li>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1, <span class="at">H2 =</span> H2))</span></code></pre></div>
 <div style="font-size: 0.85em;">
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights  goric.weights_without_unc
@@ -794,7 +795,7 @@ discussed in the Special cases Section.</p>
 <span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2), <span class="at">comparison =</span> <span class="st">&quot;none&quot;</span>)</span>
 <span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##    model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -872,7 +873,7 @@ difference in treatments you would like to find.</p>
 <span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1g =</span> H1g), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -904,7 +905,7 @@ to select the hypothesis:</p>
 <span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1m =</span> H1m), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1014,7 +1015,7 @@ true</h4>
 <span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span></code></pre></div>
 <div style="font-size: 0.85em;">
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights  goric.weights_without_unc
@@ -1078,7 +1079,7 @@ Non-overlapping part true</h4>
 <span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span></code></pre></div>
 <div style="font-size: 0.85em;">
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights  goric.weights_without_unc
@@ -1142,7 +1143,7 @@ exploratory analysis for non-overlapping part</h5>
 <span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a>results_n <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">Hn =</span> Hn), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a>results_n</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1176,7 +1177,7 @@ boundary of these hypotheses.</p>
 <span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>results_1c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>results_1c</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1240,7 +1241,7 @@ exploratory analysis for boundary</h5>
 <span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a>results_b123 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">Hb1 =</span> Hb1, <span class="at">Hb2 =</span> Hb2, <span class="at">Hb3 =</span> Hb3))</span></code></pre></div>
 <div style="font-size: 0.85em;">
 <div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a>results_b123</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights  goric.weights_without_unc
@@ -1268,7 +1269,7 @@ exploratory analysis for boundary</h5>
 <span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a>results_12u <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1, H2))</span></code></pre></div>
 <div style="font-size: 0.85em;">
 <div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a>results_12u</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##            model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights  goric.weights_without_unc
@@ -1336,7 +1337,7 @@ exploratory analysis for boundary</h5>
 <span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a>results_b <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">Hb =</span> Hb), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a>results_b</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1401,7 +1402,7 @@ discussed next (after the example).</p>
 <span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb53-6"><a href="#cb53-6" tabindex="-1"></a>results_0c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb53-7"><a href="#cb53-7" tabindex="-1"></a>results_0c</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1483,7 +1484,7 @@ use this when creating a training set is not possible.</p>
 <span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb59-8"><a href="#cb59-8" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1563,7 +1564,7 @@ hypothesis</h3>
 <span id="cb67-5"><a href="#cb67-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb67-6"><a href="#cb67-6" tabindex="-1"></a>results_2c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb67-7"><a href="#cb67-7" tabindex="-1"></a>results_2c</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1607,7 +1608,7 @@ hypothesis</h3>
 <span id="cb71-5"><a href="#cb71-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb71-6"><a href="#cb71-6" tabindex="-1"></a>results_3c <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1 =</span> H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb71-7"><a href="#cb71-7" tabindex="-1"></a>results_3c</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1774,7 +1775,7 @@ incorrect equality</h2>
 <span id="cb83-2"><a href="#cb83-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb83-3"><a href="#cb83-3" tabindex="-1"></a>results_12 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb83-4"><a href="#cb83-4" tabindex="-1"></a>results_12</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model    loglik  penalty    goric  loglik.weights  penalty.weights  goric.weights
@@ -1834,7 +1835,7 @@ both methods show full support for the complement of <span class="math inline">\
 <span id="cb88-2"><a href="#cb88-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb88-3"><a href="#cb88-3" tabindex="-1"></a>results_12_N1000 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb88-4"><a href="#cb88-4" tabindex="-1"></a>results_12_N1000</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model     loglik  penalty     goric  loglik.weights  penalty.weights  goric.weights
@@ -1873,7 +1874,7 @@ both methods show full support for the complement of <span class="math inline">\
 <span id="cb93-2"><a href="#cb93-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
 <span id="cb93-3"><a href="#cb93-3" tabindex="-1"></a>results_12_N10000 <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit, <span class="at">hypotheses =</span> <span class="fu">list</span>(H1), <span class="at">comparison =</span> <span class="st">&quot;complement&quot;</span>)</span>
 <span id="cb93-4"><a href="#cb93-4" tabindex="-1"></a>results_12_N10000</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion: 
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion: 
 ## 
 ## Results:
 ##         model      loglik  penalty      goric  loglik.weights  penalty.weights  goric.weights

@@ -62,7 +62,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       
       # Handle definitions and reformat equality
       def.idx <- grepl(":=", unLIST)
-      unLIST[!def.idx] <- gsub("=", "==", unLIST[!def.idx])
+      unLIST[!def.idx] <- gsub("(?<![=:!])=(?!=)", "==",  unLIST[!def.idx], perl = TRUE) #gsub("=", "==", unLIST[!def.idx])
       
       # Store in output
       OUT[[i]] <- paste(unLIST, collapse = "\n")
@@ -85,7 +85,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
     LIST$lhs <- lhs # names parameters used in hypotheses
     LIST$op  <- op
-    LIST$rhs <- c(LIST$rhs, rhs) 
+    LIST$rhs <- rhs #c(LIST$rhs, rhs) 
     
     # TO DO waarom onderstaande nodig?
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)
@@ -158,6 +158,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   if (meq > nrow(Amat)) { 
     stop(sprintf("restriktor ERROR: meq (%d) cannot exceed nrow(Amat) (%d).", meq, nrow(Amat)), call. = FALSE)
   }
+  # TO DO 
+  #DATA <- subset(ZelazoKolb1972, Group != "Control")
+  #fit1.lm <- lm(Age ~ Group, data = DATA)
+  #H1 <- "GroupPassive > 0; GroupPassive < GroupNo; new1 := GroupPassive + 0.5 > 0.9" 
+  #& Heq = T, dus:
+  #goric(fit1.lm, hypotheses = list(H1 = H1), Heq = T)
+  # then this error: meq (3) cannot exceed nrow(Amat) (2).
+  # Het gaat goed als in set of zonder Heq, 
+  # maar er zit een reduncancy in die er met Heq=T niet uitgaat blijkbaar
+  
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
     stop("restriktor ERROR: nonlinear (in)equality restrictions are not supported.", call. = FALSE)

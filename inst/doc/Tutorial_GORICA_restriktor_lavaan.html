@@ -12,7 +12,7 @@
 
 <meta name="author" content="Rebecca M. Kuiper and Yves Rosseel" />
 
-<meta name="date" content="2026-02-05" />
+<meta name="date" content="2026-06-11" />
 
 <title>How to evaluate theory-based hypotheses in a lavaan model using the GORICA</title>
 
@@ -50,8 +50,9 @@ overflow: visible;
 }
 </style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -62,7 +63,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -341,7 +342,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h1 class="title toc-ignore">How to evaluate theory-based hypotheses in
 a lavaan model using the GORICA</h1>
 <h4 class="author">Rebecca M. Kuiper and Yves Rosseel</h4>
-<h4 class="date">2026-02-05</h4>
+<h4 class="date">2026-06-11</h4>
 
 
 <div id="TOC">
@@ -444,7 +445,7 @@ default.</p>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
 <span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#summary(results_cfa)</span></span>
 <span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>results_cfa</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion approximation:
 ## 
 ## Results:
 ##         model  loglik  penalty   gorica  loglik.weights  penalty.weights  gorica.weights
@@ -587,12 +588,12 @@ evaluate our hypothesis using the GORICA.</p>
 <span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a>results_mgcfa <span class="ot">&lt;-</span> <span class="fu">goric</span>(fit_mgcfa, </span>
 <span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a>                       <span class="at">hypotheses =</span> <span class="fu">list</span>(<span class="at">H1_mgcfa =</span> H1_mgcfa))</span>
 <span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a>results_mgcfa</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion approximation:
 ## 
 ## Results:
 ##         model  loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights
 ## 1    H1_mgcfa  -2.500    4.774  14.549           0.000            0.649           0.000
-## 2  complement   9.594    5.390  -8.408           1.000            0.351           1.000
+## 2  complement   9.594    5.391  -8.407           1.000            0.351           1.000
 ## 
 ## Conclusion:
 ## The order-restricted hypothesis &#39;H1_mgcfa&#39; has less support (namely,  0.000 / 1.000 &lt; 1 times more support) than its complement. That is, the complement has Inf times more support than &#39;H1_mgcfa&#39;</code></pre>
@@ -671,7 +672,7 @@ sense) stronger than that of ind60 for dem65 (beta_dem65_ind60).</p>
 <span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a></span>
 <span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a><span class="co">#summary(results_sem)</span></span>
 <span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a>results_sem</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion approximation:
 ## 
 ## Results:
 ##         model   loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights
@@ -741,7 +742,7 @@ that is, abs(beta_x1) &gt; abs(beta_x2) &gt; abs(beta_x3).</p>
 <span id="cb20-25"><a href="#cb20-25" tabindex="-1"></a></span>
 <span id="cb20-26"><a href="#cb20-26" tabindex="-1"></a><span class="co">#summary(results_msem)</span></span>
 <span id="cb20-27"><a href="#cb20-27" tabindex="-1"></a>results_msem</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion approximation:
 ## 
 ## Results:
 ##         model  loglik  penalty   gorica  loglik.weights  penalty.weights  gorica.weights
@@ -801,7 +802,7 @@ absolute sense) higher than that of x1 (s_1).</p>
 <span id="cb22-34"><a href="#cb22-34" tabindex="-1"></a></span>
 <span id="cb22-35"><a href="#cb22-35" tabindex="-1"></a><span class="co">#summary(results_growth)</span></span>
 <span id="cb22-36"><a href="#cb22-36" tabindex="-1"></a>results_growth</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion approximation:
 ## 
 ## Results:
 ##         model  loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights
@@ -865,7 +866,7 @@ github page of Rebecca</a>.</p>
 <div style="font-size: 0.85em;">
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co">#summary(results_med)</span></span>
 <span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>results_med</span></code></pre></div>
-<pre><code>## restriktor (0.6-30): generalized order-restricted information criterion approximation:
+<pre><code>## restriktor (0.6-50): generalized order-restricted information criterion approximation:
 ## 
 ## Results:
 ##            model  loglik  penalty  gorica  loglik.weights  penalty.weights  gorica.weights  gorica.weights_without_unc
